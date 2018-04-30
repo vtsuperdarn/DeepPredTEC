@@ -1,2 +1,2 @@
-# deep_leaning_on_GSP_TEC
+# deep_leaning_on_GPS_TEC
 Coming soon ...
