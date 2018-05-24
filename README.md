@@ -1,2 +1,2 @@
-# deep_leaning_on_GPS_TEC
-Coming soon ...
+# Deep Leaning on GPS TEC Maps
+GPS TEC Map (Global Positioning System - Total Electron Count) is an important quantity of the ionosphere for analysis of space weather. Building an accurate predictive model for TEC maps can help in anticipating adverse ionospheric events (ex: solar storms), thereby safeguarding critical communication, energy and navigation infrastructure. I will be building deep spatio-temporal predictive models for GPS TEC Map.
