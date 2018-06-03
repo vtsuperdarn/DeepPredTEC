@@ -2,13 +2,11 @@
 Author: Sneha Singhania
 Date: June 3, 2018
 Comment: This file contain helper functions and custom neural layers. The functions help in abstracting the complexity of the architecture and Tensorflow features. These functions are being called in the st_resnet.py for defining the computational graph
-
 '''
 
 import tensorflow as tf
 import numpy as np
 from params import Params as param
-
 
 
 def ResUnit(inputs, filters, kernel_size, strides, scope, reuse=None):   
@@ -40,7 +38,7 @@ def ResNet(inputs, filters, kernel_size, repeats, scope, reuse=None):
     Defines the ResNet architecture
     '''
     with tf.variable_scope(scope, reuse=reuse):
-        #apply repeats residual layers
+        #apply repeats number of residual layers
         for layer_id in range(repeats):
             inputs = ResUnit(inputs, filters, kernel_size, (1,1), "reslayer_{}".format(layer_id), reuse)
         outputs = tf.nn.relu(inputs, name="relu")
