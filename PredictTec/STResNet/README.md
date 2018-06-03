@@ -17,4 +17,4 @@ To create the TensorFlow computation graph of the ST-ResNet architecture run:
 
 ## References
 
-Deep Spatio-Temporal Residual Networks for Citywide Crowd Flows Prediction (https://arxiv.org/pdf/1610.00081.pdf)
+- .[Deep Spatio-Temporal Residual Networks for Citywide Crowd Flows Prediction]. (https://arxiv.org/pdf/1610.00081.pdf)
