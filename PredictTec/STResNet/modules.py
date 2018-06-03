@@ -99,7 +99,7 @@ def Fusion(closeness_output, period_output, trend_output, scope, shape):
         #adding non-linearity
         outputs = tf.tanh(outputs)
         
-        #converting the dimension from (H, W) -> (1, H, W)
+        #converting the dimension from (H, W) -> (H, W, 1)
         outputs = tf.expand_dims(outputs, axis=2)
         return outputs
                
