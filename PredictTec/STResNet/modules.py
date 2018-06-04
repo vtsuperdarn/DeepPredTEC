@@ -8,7 +8,26 @@ import tensorflow as tf
 import numpy as np
 from params import Params as param
 
-
+def get_train_batch_data():
+    '''
+    Gets the input data for training the model 
+    '''
+    inputs = pickle.load(open("train_data.pkl", "r"))
+    
+    #TODO: get the respective tensors from the train file and convert it into a tensor
+    
+    #create input queues
+    input_queues = tf.train.slice_input_producer([c_tec, p_tec, t_tec, output_tec])
+    
+    # create batch queues
+    c_tec, p_tec, t_tec, output_tec = tf.train.shuffle_batch(inputs, 
+                                                             num_threads=8, 
+                                                             batch_size=param.batch_size, 
+                                                             capacity=param.batch_size*64, 
+                                                             min_after_dequeue=param.batch_size*32, 
+                                                             allow_smaller_final_batch=False)    
+    return c_tec, p_tec, t_tec, output_tec           
+        
 def ResUnit(inputs, filters, kernel_size, strides, scope, reuse=None):   
     '''
     Defines a residual unit: input->[layernorm->relu->conv->layernorm->relu->conv]->reslink-> output
