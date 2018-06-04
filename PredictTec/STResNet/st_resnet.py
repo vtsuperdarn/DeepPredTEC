@@ -15,6 +15,9 @@ class Graph(object):
         with self.graph.as_default():
             B, H, W, C, P, T, O, F, U  = param.batch_size, param.map_height, param.map_width, param.closeness_sequence_length, param.period_sequence_length, param.trend_sequence_length, param.num_of_output_tec_maps ,param.num_of_filters, param.num_of_residual_units
             
+            #get inputs and outputs
+            #self.c_tec, self.p_tec, self.t_tec, self.output_tec = my.get_batch_data()
+            
             #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
             self.c_tec = tf.placeholder(tf.float32, shape=[B, H, W, C], name="closeness_tec_maps")
             self.p_tec = tf.placeholder(tf.float32, shape=[B, H, W, P], name="period_tec_maps")
