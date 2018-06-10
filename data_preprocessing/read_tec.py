@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+import sqlite3
 import datetime as dt
 
-def gen_2d_tec_map(cdate, mlat_min = 15., mlon_west = 250,
-                   mlon_east = 34.,
-                   inpDir = "/sd-data/med_filt_tec/"):
+
+def generate_2d_tec_map(cdate, mlat_min = 15., mlon_west = 250,
+                        mlon_east = 34.,
+                        inpDir = "/sd-data/med_filt_tec/"):
 
     """Generates data for 2D TEC map
     """
@@ -38,26 +40,75 @@ def gen_2d_tec_map(cdate, mlat_min = 15., mlon_west = 250,
             data_dict[dtm] = tec_map
 
             print("Extracted 2D matrix for " + str(dtm))
-            #print("There are {nan_frame} np.nan frames for this date".format(nan_frame=np.)
 
     return data_dict
+
+def create_tec_map_table(sdate, edate, tec_resolution=5,
+                         table_name="tec_map", 
+                         db_name="tec_map.sqlite", 
+                         db_dir="../data/sqlite3/"):
+    """Creats a table in SQLite db to store datetimes of tec maps and their file paths"""
+
+    # Make a db connection
+    conn = sqlite3.connect(db_dir + db_name)
+
+    # Create a table
+    schema = "Create Table IF NOT EXISTS {tbl} (" +\
+	     "datetime TIMESTAMP, "+\
+             "file_path TEXT, " +\
+             "PRIMARY KEY datetime)"
+    schema = schema.format(tbl=table_name)
+
+    # Create a dataframe
+    nmaps = int(round((edate - sdate).total_seconds() / 60. / tec_resolution))
+    dtms = [sdate + dt.timedelta(minutes=tec_resolution*i) for i in range(nmaps)] 
+    df = pd.DataFrame(data={"datetime":dtms, "file_paths":"NaN"})
+
+    # Write data to db
+    df.to_sql(table_name, conn, schema=schema, if_exists="append", index=False)
+
+    return
+
+
 
 if __name__ == "__main__":
 
 
     # initialize parameters
-    #stm = [dt.datetime(2015, 1, 7, 0, 0)]
-    #etm = [dt.datetime(2015, 1, 7, 23, 59)]
-    #cdates = [stm + dt.timedelta(days=i) for i in range(etm-stm).days]
+    sdate = dt.datetime(2015, 1, 1)
+    edate = dt.datetime(2016, 1, 1)
 
-    inpDir = "/sd-data/med_filt_tec/"
-    cdate = dt.datetime(2015, 1, 7)
-    mlat_min = 15.
-    mlon_west = 250
-    mlon_east = 34
+    tec_resolution = 5
 
-    data_dict = gen_2d_tec_map(cdate, mlat_min=mlat_min, mlon_west=mlon_west,
-                               mlon_east=mlon_east, inpDir=inpDir)
+    # Create a table for storing tec map datetimes and file paths
+    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
+                         table_name="tec_map", 
+                         db_name="tec_map.sqlite", 
+                         db_dir="../data/sqlite3/")
+
+
+#    #cdates = [sdate + dt.timedelta(days=i) for i in range((edate-sdate).days + 1)]
+#
+#    inpDir = "/sd-data/med_filt_tec/"
+#    cdate = dt.datetime(2015, 1, 7)
+#    mlat_min = 15.
+#    mlon_west = 250
+#    mlon_east = 34
+#
+#    data_dict = gen_2d_tec_map(cdate, mlat_min=mlat_min, mlon_west=mlon_west,
+#                               mlon_east=mlon_east, inpDir=inpDir)
+#
+#    #closeness is sampled 12 times every 5 mins, lookback = (12*5min = 1 hour)
+#    #freq 1 is 5mins
+#    closeness_freq = 1
+#    #size corresponds to the sample size
+#    closeness_size = 12
+#    #period is sampled 24 times every 1 hour (every 12th index), lookback = (24*12*5min = 1440min = 1day)
+#    period_freq = 12
+#    period_size = 24
+#    #trend is sampled 24 times every 3 hours (every 36th index), lookback = (8*36*5min = 1440min = 1day)
+#    trend_freq = 36
+#    trend_size = 8
 
 #    # Plot a TEC map
 #    import matplotlib.pyplot as plt
