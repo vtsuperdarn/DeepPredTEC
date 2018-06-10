@@ -21,6 +21,7 @@ def create_tec_map_table(sdate, edate, tec_resolution=5,
     schema = schema.format(tbl=table_name)
 
     # Create a dataframe
+    edate = edate + dt.timedelta(days=1)    # Make the end date inclusive
     nmaps = int(round((edate - sdate).total_seconds() / 60. / tec_resolution))
     dtms = [sdate + dt.timedelta(minutes=tec_resolution*i) for i in range(nmaps)] 
     df = pd.DataFrame(data={"datetime":dtms, "file_paths":"NaN"})
@@ -44,8 +45,9 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
     inpColList = [ "dateStr", "timeStr", "Mlat",\
                    "Mlon", "med_tec", "dlat", "dlon" ]
 
+    if edate is None:
+        edate = sdate
     cdates = [sdate + dt.timedelta(days=i) for i in range((edate-sdate).days + 1)]
-    file_dict = {}
     for cdate in cdates:
         # Create a folder for storing a day of data files
         rel_dir = cdate.strftime("%Y%m%d") + "/"
@@ -96,12 +98,41 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
                             grb_tmp.loc[grb_tmp.index[-1]+1, ["Mlat", "Mlon"]] = [grb_tmp.Mlat.iloc[0], lon]
                     tec_map = grb_tmp.pivot(index="Mlat", columns="Mlon", values="med_tec").as_matrix()
 
-                file_name = rel_dir + dtm.strftime("%Y%m%d.%H%M") + ".npy"
-                np.save(outDir + file_name, tec_map)
+                file_name = file_dir + dtm.strftime("%Y%m%d.%H%M") + ".npy"
+                np.save(file_name, tec_map)
 
-                file_dict[dtm] = file_name
+    return
 
-    return file_dict
+def fill_tec_map(sdate, edate=None, 
+                 inpDir="../data/tec_map/original/",
+                 outDir="../data/tec_map/filled/"):
+
+    if edate is None:
+        edate = sdate
+
+    # Create a dataframe
+    edate = edate + dt.timedelta(days=1)    # Make the end date inclusive
+    nmaps = int(round((edate - sdate).total_seconds() / 60. / tec_resolution))
+    dtms = [sdate + dt.timedelta(minutes=tec_resolution*i) for i in range(nmaps)] 
+
+    # Loop through each file
+    for dtm in dtms:
+        file_name = inpDir + dtm.strftime("%Y%m%d") + "/" +\
+                    dtm.strftime("%Y%m%d.%H%M") + ".npy"
+        if os.path.isfile(file_name):
+            tec_map = np.load(file_name)
+
+            # Fill the missing values
+            # NOTE: This step has to be done more properly 
+            tec_map[np.isnan(tec_map)] = -1
+
+            file_name_new = outDir + dtm.strftime("%Y%m%d") + "/" +\
+                            dtm.strftime("%Y%m%d.%H%M") + ".npy"
+            np.save(file_name_new, tec_map)
+        else:
+            continue
+    return
+
 
 
 if __name__ == "__main__":
@@ -118,10 +149,10 @@ if __name__ == "__main__":
     mlat_min = 15.
     mlon_west = 250
     mlon_east = 34
-    file_dict = generate_tec_map_files(sdate, edate=edate, 
-                                       mlat_min=mlat_min, mlon_west=mlon_west,
-                                       mlon_east=mlon_east,
-                                       inpDir=inpDir, outDir=outDir)
+    generate_tec_map_files(sdate, edate=edate, 
+                           mlat_min=mlat_min, mlon_west=mlon_west,
+                           mlon_east=mlon_east,
+                           inpDir=inpDir, outDir=outDir)
 
 #    # Create a table for storing tec map datetimes and file paths
 #    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
