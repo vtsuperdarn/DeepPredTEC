@@ -3,46 +3,6 @@ import numpy as np
 import sqlite3
 import datetime as dt
 
-
-def generate_2d_tec_map(cdate, mlat_min = 15., mlon_west = 250,
-                        mlon_east = 34.,
-                        inpDir = "/sd-data/med_filt_tec/"):
-
-    """Generates data for 2D TEC map
-    """
-
-    # Read the median filtered TEC data
-    inpColList = [ "dateStr", "timeStr", "Mlat",\
-                   "Mlon", "med_tec", "dlat", "dlon" ]
-
-    inpFile = inpDir + "tec-medFilt-" + cdate.strftime("%Y%m%d") + ".txt"
-    print("reading data for " + cdate.strftime("%m/%d/%Y"))
-    df = pd.read_csv(inpFile, delim_whitespace=True,
-		     header=None, names=inpColList)
-
-    # Change Mlon range from 0 to 360 to -180 to 180
-    df.loc[:, "Mlon"] = df.Mlon.apply(lambda x: x if x<=180 else x-360)
-    mlon_west = mlon_west - 360
-
-    data_dict = {}
-    if not df.empty:
-	dateStr = str(df.dateStr[0])
-        # Loop through each 5-min frame
-	for time, group in df.groupby("timeStr"):
-
-	    # Construct a datetime for current frame
-	    timeStr = "00" + str(time)
-	    dtmStr = dateStr + timeStr[-4:]
-	    dtm = dt.datetime.strptime(dtmStr, "%Y%m%d%H%M")
-
-            grb = group.loc[(group.Mlat >= mlat_min) & (group.Mlon >= mlon_west) & (group.Mlon <= mlon_east)]
-            tec_map = grb.pivot(index="Mlat", columns="Mlon", values="med_tec").as_matrix()
-            data_dict[dtm] = tec_map
-
-            print("Extracted 2D matrix for " + str(dtm))
-
-    return data_dict
-
 def create_tec_map_table(sdate, edate, tec_resolution=5,
                          table_name="tec_map", 
                          db_name="tec_map.sqlite", 
@@ -69,6 +29,68 @@ def create_tec_map_table(sdate, edate, tec_resolution=5,
 
     return
 
+def generate_2d_tec_map(cdate, mlat_min=15.,
+                        mlon_west=250, mlon_east=34.,
+                        inpDir = "/sd-data/med_filt_tec/"):
+
+    """Generates data for 2D TEC map for a given date
+    """
+    # Calc tec map dimension
+    tec_map_dim = (int(90-mlat_min), int(((360-mlon_west%360) + mlon_east)/2.)+1)
+
+    # Read the median filtered TEC data
+    inpColList = [ "dateStr", "timeStr", "Mlat",\
+                   "Mlon", "med_tec", "dlat", "dlon" ]
+
+    inpFile = inpDir + "tec-medFilt-" + cdate.strftime("%Y%m%d") + ".txt"
+    print("reading data for " + cdate.strftime("%m/%d/%Y"))
+    df = pd.read_csv(inpFile, delim_whitespace=True,
+		     header=None, names=inpColList)
+
+    # Change Mlon range from 0 to 360 to -180 to 180
+    df.loc[:, "Mlon"] = df.Mlon.apply(lambda x: x if x<=180 else x-360)
+    mlon_west = mlon_west - 360
+
+    dlat = df.dlat.iloc[0]
+    dlon = df.dlon.iloc[0]
+    all_mlats = set(np.arange(mlat_min, 90., dlat))
+    all_mlons = set(np.arange(mlon_west, mlon_east+1., dlon))
+    data_dict = {}
+    if not df.empty:
+	dateStr = str(df.dateStr[0])
+        # Loop through each 5-min frame
+	for time, group in df.groupby("timeStr"):
+
+	    # Construct a datetime for current frame
+	    timeStr = "00" + str(time)
+	    dtmStr = dateStr + timeStr[-4:]
+	    dtm = dt.datetime.strptime(dtmStr, "%Y%m%d%H%M")
+
+            # Extract a 2D matrix of interest
+            grb = group.loc[(group.Mlat >= mlat_min) & (group.Mlon >= mlon_west) & (group.Mlon <= mlon_east)]
+            tec_map = grb.pivot(index="Mlat", columns="Mlon", values="med_tec").as_matrix()
+            
+            # Check tec_map dimension.
+            # If there are missing Mlat or Mlon, insert them with their tec values set to NaN
+            if tec_map.shape != tec_map_dim:
+                mlats_exist = set(grb.Mlat.unique())
+                mlons_exist = set(grb.Mlon.unique())
+                mlats_missing = list(all_mlats - mlats_exist)
+                mlons_missing = list(all_mlons - mlons_exist)
+                grb_tmp = grb.copy(deep=True)
+                if mlats_missing:
+                    for lat in mlats_missing:
+                        grb_tmp.loc[grb_tmp.index[-1]+1, ["Mlat", "Mlon"]] = [lat, grb_tmp.Mlon.iloc[0]]
+                if mlons_missing:
+                    for lon in mlons_missing:
+                        grb_tmp.loc[grb_tmp.index[-1]+1, ["Mlat", "Mlon"]] = [grb_tmp.Mlat.iloc[0], lon]
+                tec_map = grb_tmp.pivot(index="Mlat", columns="Mlon", values="med_tec").as_matrix()
+
+            data_dict[dtm] = tec_map
+
+            print("Extracted 2D matrix for " + str(dtm))
+
+    return data_dict
 
 
 if __name__ == "__main__":
@@ -77,26 +99,26 @@ if __name__ == "__main__":
     # initialize parameters
     sdate = dt.datetime(2015, 1, 1)
     edate = dt.datetime(2016, 1, 1)
+    #cdates = [sdate + dt.timedelta(days=i) for i in range((edate-sdate).days + 1)]
 
     tec_resolution = 5
 
     # Create a table for storing tec map datetimes and file paths
-    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
-                         table_name="tec_map", 
-                         db_name="tec_map.sqlite", 
-                         db_dir="../data/sqlite3/")
+#    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
+#                         table_name="tec_map", 
+#                         db_name="tec_map.sqlite", 
+#                         db_dir="../data/sqlite3/")
 
 
-#    #cdates = [sdate + dt.timedelta(days=i) for i in range((edate-sdate).days + 1)]
-#
-#    inpDir = "/sd-data/med_filt_tec/"
-#    cdate = dt.datetime(2015, 1, 7)
-#    mlat_min = 15.
-#    mlon_west = 250
-#    mlon_east = 34
-#
-#    data_dict = gen_2d_tec_map(cdate, mlat_min=mlat_min, mlon_west=mlon_west,
-#                               mlon_east=mlon_east, inpDir=inpDir)
+
+    inpDir = "/sd-data/med_filt_tec/"
+    cdate = dt.datetime(2015, 1, 7)
+    mlat_min = 15.
+    mlon_west = 250
+    mlon_east = 34
+
+    data_dict = generate_2d_tec_map(cdate, mlat_min=mlat_min, mlon_west=mlon_west,
+                                     mlon_east=mlon_east, inpDir=inpDir)
 #
 #    #closeness is sampled 12 times every 5 mins, lookback = (12*5min = 1 hour)
 #    #freq 1 is 5mins
