@@ -4,33 +4,6 @@ import sqlite3
 import datetime as dt
 import os
 
-def create_tec_map_table(sdate, edate, tec_resolution=5,
-                         table_name="tec_map", 
-                         db_name="tec_map.sqlite", 
-                         db_dir="../data/sqlite3/"):
-    """Creats a table in SQLite db to store datetimes of tec maps and their file paths"""
-
-    # Make a db connection
-    conn = sqlite3.connect(db_dir + db_name)
-
-    # Create a table
-    schema = "Create Table IF NOT EXISTS {tbl} (" +\
-	     "datetime TIMESTAMP, "+\
-             "file_path TEXT, " +\
-             "PRIMARY KEY datetime)"
-    schema = schema.format(tbl=table_name)
-
-    # Create a dataframe
-    edate = edate + dt.timedelta(days=1)    # Make the end date inclusive
-    nmaps = int(round((edate - sdate).total_seconds() / 60. / tec_resolution))
-    dtms = [sdate + dt.timedelta(minutes=tec_resolution*i) for i in range(nmaps)] 
-    df = pd.DataFrame(data={"datetime":dtms, "file_paths":"NaN"})
-
-    # Write data to db
-    df.to_sql(table_name, conn, schema=schema, if_exists="append", index=False)
-
-    return
-
 def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
                            mlon_west=250, mlon_east=34.,
                            inpDir="/sd-data/med_filt_tec/",
@@ -99,13 +72,16 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
                     tec_map = grb_tmp.pivot(index="Mlat", columns="Mlon", values="med_tec").as_matrix()
 
                 file_name = file_dir + dtm.strftime("%Y%m%d.%H%M") + ".npy"
-                np.save(file_name, tec_map)
+                #np.save(file_name, tec_map)
+                with open(file_name, "w") as f:
+                    np.save(f, tec_map)
 
     return
 
 def fill_tec_map(sdate, edate=None, 
                  inpDir="../data/tec_map/original/",
                  outDir="../data/tec_map/filled/"):
+    """Fills the missing data in each TEC map. Filled maps are stored as files"""
 
     if edate is None:
         edate = sdate
@@ -133,6 +109,37 @@ def fill_tec_map(sdate, edate=None,
             continue
     return
 
+def create_tec_map_table(sdate, edate, tec_resolution=5,
+                         file_dir="../data/tec_map/filled/",
+                         table_name="tec_map_filled", 
+                         db_name="tec_map.sqlite", 
+                         db_dir="../data/sqlite3/"):
+    """Creats a table in SQLite db to store datetimes of tec maps
+       and their file paths"""
+
+    # Make a db connection
+    conn = sqlite3.connect(db_dir + db_name)
+
+    # Create a table
+    schema = "Create Table IF NOT EXISTS {tbl} (" +\
+	     "datetime TIMESTAMP, "+\
+             "file_path TEXT, " +\
+             "PRIMARY KEY datetime)"
+    schema = schema.format(tbl=table_name)
+
+    # Create a dataframe
+    edate = edate + dt.timedelta(days=1)    # Make the end date inclusive
+    nmaps = int(round((edate - sdate).total_seconds() / 60. / tec_resolution))
+    dtms = [sdate + dt.timedelta(minutes=tec_resolution*i) for i in range(nmaps)] 
+    files_all = [file_dir + dtm.strftime("%Y%m%d") + "/" +\
+                 dtm.strftime("%Y%m%d.%H%M") + ".npy" for dtm in dtms]
+    files = [f if os.path.isfile(f) else "NaN" for f in files_all]
+    df = pd.DataFrame(data={"datetime":dtms, "file_path":files})
+
+    # Write data to db
+    df.to_sql(table_name, conn, schema=schema, if_exists="append", index=False)
+
+    return
 
 
 if __name__ == "__main__":
@@ -153,6 +160,11 @@ if __name__ == "__main__":
                            mlat_min=mlat_min, mlon_west=mlon_west,
                            mlon_east=mlon_east,
                            inpDir=inpDir, outDir=outDir)
+
+    fill_tec_map(sdate, edate=edate, 
+                 inpDir="../data/tec_map/original/",
+                 outDir="../data/tec_map/filled/")
+
 
 #    # Create a table for storing tec map datetimes and file paths
 #    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
