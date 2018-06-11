@@ -117,12 +117,12 @@ if __name__ == "__main__":
     tec_resolution = 5
     file_dir="../data/tec_map/filled/"
 
-#    # Create a table for storing tec map datetimes and file paths
-#    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
-#                         file_dir=file_dir,
-#                         table_name="tec_map_filled", 
-#                         db_name="tec_map.sqlite", 
-#                         db_dir="../data/sqlite3/")
+    # Create a table for storing tec map datetimes and file paths
+    create_tec_map_table(sdate, edate, tec_resolution=tec_resolution,
+                         file_dir=file_dir,
+                         table_name="tec_map_filled", 
+                         db_name="tec_map.sqlite", 
+                         db_dir="../data/sqlite3/")
 
     # Fill the missing frames with adjacent frames
     fill_missing_tec_map(tec_resolution=tec_resolution,

@@ -7,7 +7,8 @@ import os
 def fill_tec_map(sdate, edate=None, tec_resolution=5,
                  inpDir="../data/tec_map/original/",
                  outDir="../data/tec_map/filled/"):
-    """Fills the missing data in each TEC map. Filled maps are stored as files"""
+    """Fills the missing data in each TEC map.
+    Filled maps are stored as seperate files"""
 
     if edate is None:
         edate = sdate
@@ -32,7 +33,7 @@ def fill_tec_map(sdate, edate=None, tec_resolution=5,
             tec_map = np.load(file_name)
 
             # Fill the missing values
-            # NOTE: This step has to be done more properly 
+            # NOTE: This step needs to be explored more
             tec_map[np.isnan(tec_map)] = -1
 
             file_name_new = outDir + dtm.strftime("%Y%m%d") + "/" +\
@@ -47,10 +48,10 @@ if __name__ == "__main__":
 
     # initialize parameters
     sdate = dt.datetime(2015, 1, 1)
-    edate = dt.datetime(2015, 1, 17)
+    edate = dt.datetime(2015, 3, 1)
     tec_resolution = 5
-    inpDir="../data/tec_map/original/"
-    outDir="../data/tec_map/filled/"
+    inpDir="../data/tec_map/original/"       # Make sure you have this folder
+    outDir="../data/tec_map/filled/"         # Make sure you have this folder
 
     fill_tec_map(sdate, edate=edate, tec_resolution=tec_resolution,
                  inpDir=inpDir, outDir=outDir)
