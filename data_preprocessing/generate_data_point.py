@@ -54,7 +54,8 @@ class tec_data_point():
         for dtm in dtms:
 	    fname = self.file_dir + dtm.strftime("%Y%m%d") + "/" +\
 		    dtm.strftime("%Y%m%d.%H%M") + ".npy"
-	    data.append(np.load(fname))
+            tec_map = np.load(fname)
+	    data.append(tec_map)
 
 	return data
 			
@@ -108,18 +109,33 @@ if __name__ == "__main__":
 
     # initialize parameters
     current_datetime = dt.datetime(2015, 1, 2, 10, 5)
+    file_dir="../data/tec_map/filled/"
+    tec_resolution=5
+
+    #closeness is sampled 12 times every 5 mins, lookback = (12*5min = 1 hour)
+    #freq 1 is 5mins
+    closeness_freq = 1
+    #size corresponds to the sample size
+    closeness_size = 12
+    #period is sampled 24 times every 1 hour (every 12th index), lookback = (24*12*5min = 1440min = 1day)
+    period_freq = 12
+    period_size = 24
+    #trend is sampled 24 times every 3 hours (every 36th index), lookback = (8*36*5min = 1440min = 1day)
+    trend_freq = 36
+    trend_size = 8
+
+    batch_size = 32    # Number of data_points
 
     data_point = tec_data_point(current_datetime,
-                                file_dir="../data/tec_map/filled/",
-                                tec_resolution=5,
-                                closeness_freq=1, closeness_size=12,
-                                period_freq=12, period_size=24,
-                                trend_freq=36, trend_size=8)
+                                file_dir=file_dir,
+                                tec_resolution=tec_resolution,
+                                closeness_freq=closeness_freq, closeness_size=closeness_size,
+                                period_freq=period_freq, period_size=period_size,
+                                trend_freq=trend_freq, trend_size=trend_size)
 
-    batch = tec_batch(batch_size=32, current_datetime,
-                      file_dir="../data/tec_map/filled/",
-                      tec_resolution=5,
-                      closeness_freq=1, closeness_size=12,
-                      period_freq=12, period_size=24,
-                      trend_freq=36, trend_size=8)
-
+    batch = tec_batch(current_datetime, batch_size=batch_size,
+                      file_dir=file_dir,
+                      tec_resolution=tec_resolution,
+                      closeness_freq=closeness_freq, closeness_size=closeness_size,
+                      period_freq=period_freq, period_size=period_size,
+                      trend_freq=trend_freq, trend_size=trend_size)
