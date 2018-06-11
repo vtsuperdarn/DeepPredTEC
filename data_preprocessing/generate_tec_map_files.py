@@ -14,6 +14,9 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
     # Calc tec map dimension
     tec_map_dim = (int(90-mlat_min), int(((360-mlon_west%360) + mlon_east)/2.)+1)
 
+    # Make Mlon between -180 to 180
+    mlon_west = mlon_west - 360
+
     # Read the median filtered TEC data
     inpColList = [ "dateStr", "timeStr", "Mlat",\
                    "Mlon", "med_tec", "dlat", "dlon" ]
@@ -21,7 +24,7 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
     if edate is None:
         edate = sdate
     cdates = [sdate + dt.timedelta(days=i) for i in range((edate-sdate).days + 1)]
-    for cdate in cdates:
+    for k, cdate in enumerate(cdates):
         # Create a folder for storing a day of data files
         rel_dir = cdate.strftime("%Y%m%d") + "/"
         file_dir = outDir + rel_dir
@@ -33,9 +36,8 @@ def generate_tec_map_files(sdate, edate=None, mlat_min=15.,
         df = pd.read_csv(inpFile, delim_whitespace=True,
                          header=None, names=inpColList)
 
-        # Change Mlon range from 0 to 360 to -180 to 180
+        # Change Mlon range from 0-360 to -180 to 180
         df.loc[:, "Mlon"] = df.Mlon.apply(lambda x: x if x<=180 else x-360)
-        mlon_west = mlon_west - 360
 
         dlat = df.dlat.iloc[0]
         dlon = df.dlon.iloc[0]
@@ -82,8 +84,8 @@ if __name__ == "__main__":
 
 
     # initialize parameters
-    sdate = dt.datetime(2015, 1, 12)
-    edate = dt.datetime(2015, 2, 1)
+    sdate = dt.datetime(2015, 1, 1)
+    edate = dt.datetime(2015, 4, 1)
 
     tec_resolution = 5
 
