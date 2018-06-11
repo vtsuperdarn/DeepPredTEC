@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     # initialize parameters
     sdate = dt.datetime(2015, 1, 1)
-    edate = dt.datetime(2015, 1, 10)
+    edate = dt.datetime(2015, 1, 17)
     tec_resolution = 5
     inpDir="../data/tec_map/original/"
     outDir="../data/tec_map/filled/"

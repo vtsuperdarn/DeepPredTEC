@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
 
     # initialize parameters
-    sdate = dt.datetime(2015, 1, 1)
+    sdate = dt.datetime(2015, 1, 12)
     edate = dt.datetime(2015, 2, 1)
 
     tec_resolution = 5
