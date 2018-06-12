@@ -42,22 +42,34 @@ class tec_data_point():
 
     def _get_data(self):
 
-        dtms = [self.current_datetime + dt.timedelta(minutes=self.tec_resolution)] +\
-               [self.current_datetime - dt.timedelta(minutes=i*self.closeness_freq*self.tec_resolution)\
-                for i in range(self.closeness_size)] +\
-               [self.current_datetime - dt.timedelta(minutes=i*self.period_freq*self.tec_resolution)\
-                for i in range(self.period_size)] +\
-               [self.current_datetime - dt.timedelta(minutes=i*self.trend_freq*self.tec_resolution)\
-                for i in range(self.trend_size)]
+        # For future frame
+        future_dtm = [self.current_datetime + dt.timedelta(minutes=self.tec_resolution)]     
+        # For near frames
+        near_dtm = [self.current_datetime - dt.timedelta(minutes=i*self.closeness_freq*self.tec_resolution)\
+                    for i in range(self.closeness_size)]
+        # For recent frames
+        recent_dtm = [self.current_datetime - dt.timedelta(minutes=i*self.period_freq*self.tec_resolution)\
+                    for i in range(self.period_size)]
+        # For distant frames
+        distant_dtm = [self.current_datetime - dt.timedelta(minutes=i*self.trend_freq*self.tec_resolution)\
+                       for i in range(self.trend_size)]          
+        # All frames
+        dtms = future_dtm +  near_dtm + recent_dtm + distant_dtm
 
 	data = []
         for dtm in dtms:
 	    fname = self.file_dir + dtm.strftime("%Y%m%d") + "/" +\
 		    dtm.strftime("%Y%m%d.%H%M") + ".npy"
-            tec_map = np.load(fname)
-	    data.append(tec_map)
+            try:
+                tec_map = np.load(fname)
+                data.append(tec_map)
+            except:
+                data = None
+                break
+        if data is not None:
+            data = np.array(data)
 
-	return data
+        return data
 			
 
 class tec_batch():
@@ -99,8 +111,13 @@ class tec_batch():
 					trend_freq=self.trend_freq,
 					trend_size=self.trend_size)
 
-	    data.append(data_point)
+            if data_point.data is not None:
+                data.append(data_point.data)
+            else:
+                data = None
 
+        if data is not None:
+            data = np.array(data)
 	return data
 
 
@@ -132,6 +149,11 @@ if __name__ == "__main__":
                                 closeness_freq=closeness_freq, closeness_size=closeness_size,
                                 period_freq=period_freq, period_size=period_size,
                                 trend_freq=trend_freq, trend_size=trend_size)
+    if data_point.data is not None:
+        print("The shape of a data point is " + str(data_point.data.shape))
+    else:
+        print("Not enough frames to construct a data point")
+
 
     batch = tec_batch(current_datetime, batch_size=batch_size,
                       file_dir=file_dir,
@@ -139,3 +161,8 @@ if __name__ == "__main__":
                       closeness_freq=closeness_freq, closeness_size=closeness_size,
                       period_freq=period_freq, period_size=period_size,
                       trend_freq=trend_freq, trend_size=trend_size)
+
+    if batch.data is not None:
+        print("The shape of a batch is " + str(batch.data.shape))
+    else:
+        print("Not enough data_points to construct a batch")
