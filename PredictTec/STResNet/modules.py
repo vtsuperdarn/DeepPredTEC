@@ -12,7 +12,19 @@ def get_train_batch_data():
     '''
     Gets the input data for training the model 
     '''
-    inputs = pickle.load(open("train_data.pkl", "r"))
+    inputs = pickle.load(open("xdata.pkl", "r"))
+    outputs = pickle.load(open("ydata.pkl", "r"))
+    
+    split_train = int(len(tec_maps)*0.4)
+    train_tec = tec_maps[ : split_train]
+    test_tec = tec_maps[split_train : -1]
+    
+    
+    x_c_w = tf.convert_to_tensor(x_c_w, tf.int32)
+    x_c_c = tf.convert_to_tensor(x_c_c, tf.int32)
+    x_q_w = tf.convert_to_tensor(x_q_w, tf.int32)
+    x_q_c = tf.convert_to_tensor(x_q_c, tf.int32)
+    y = tf.convert_to_tensor(y, tf.int32)
     
     #TODO: get the respective tensors from the train file and convert it into a tensor
     
@@ -114,9 +126,8 @@ def Fusion(closeness_output, period_output, trend_output, scope, shape):
         outputs = tf.add(tf.add(closeness_output, period_output), trend_output)
         
         #adding non-linearity
-        outputs = tf.tanh(outputs)
+        #outputs = tf.tanh(outputs)
         
-        #converting the dimension from (H, W) -> (H, W, 1)
-        outputs = tf.expand_dims(outputs, axis=2)
-        return outputs
-               
+        #converting the dimension from (B, H, W) -> (B, H, W, 1)
+        outputs = tf.expand_dims(outputs, axis=3)
+        return outputs               
