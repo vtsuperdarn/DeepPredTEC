@@ -27,6 +27,7 @@ def fill_tec_map(sdate, edate=None, tec_resolution=5,
 
     # Loop through each file
     for dtm in dtms:
+        print("filling TEC map for " + str(dtm))
         file_name = inpDir + dtm.strftime("%Y%m%d") + "/" +\
                     dtm.strftime("%Y%m%d.%H%M") + ".npy"
         if os.path.isfile(file_name):

@@ -62,7 +62,7 @@ def fill_missing_tec_map(tec_resolution=5, nframes_before=3, nframes_after=3,
                 command = command.format(tbl=table_name, fname=fname_i.replace(file_dir, ""),
                                          dtm = dtm)
                 cur.execute(command)
-                #print("Filled the missing frame for " + str(dtm))
+                print("Filled the missing frame for " + str(dtm))
             else:
                 continue
 
@@ -81,8 +81,6 @@ if __name__ == "__main__":
 
 
     # initialize parameters
-    sdate = dt.datetime(2015, 1, 1)
-    edate = dt.datetime(2015, 3, 1)    # Includes the edate
     tec_resolution = 5
     file_dir="../data/tec_map/filled/"
 

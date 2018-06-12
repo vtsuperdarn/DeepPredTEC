@@ -85,12 +85,12 @@ if __name__ == "__main__":
 
     # initialize parameters
     sdate = dt.datetime(2015, 1, 1)
-    edate = dt.datetime(2015, 4, 1)
+    edate = dt.datetime(2015, 3, 1)
 
     tec_resolution = 5
 
     inpDir = "/sd-data/med_filt_tec/"
-    outDir="../data/tec_map/original/"
+    outDir="../data/tec_map/original/"    # Make sure you have this folder
     mlat_min = 15.
     mlon_west = 250
     mlon_east = 34
