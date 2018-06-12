@@ -24,6 +24,7 @@ class Graph(object):
             self.t_tec = tf.placeholder(tf.float32, shape=[B, H, W, T], name="trend_tec_maps")
             self.output_tec = tf.placeholder(tf.float32, shape=[B, H, W, O], name="output_tec_map") 
             
+            #print "place"
             #ResNet architecture for the three modules
             #module 1: Capturing the closeness(recent)
             self.closeness_output = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=(7, 7), scope="closeness_input", reuse=None)
@@ -36,7 +37,7 @@ class Graph(object):
             self.period_output = my.ResOutput(inputs=self.period_output, filters=1, kernel_size=(7, 7), scope="resnet_output", reuse=True)
             
             #module 3: Capturing the trend(distant) 
-            self.trend_output = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=(7, 7), scope="trend_output", reuse=None)
+            self.trend_output = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=(7, 7), scope="trend_input", reuse=None)
             self.trend_output = my.ResNet(inputs=self.trend_output, filters=F, kernel_size=(7, 7), repeats=U, scope="resnet", reuse=True)
             self.trend_output = my.ResOutput(inputs=self.trend_output, filters=1, kernel_size=(7, 7), scope="resnet_output", reuse=True)
             
@@ -46,16 +47,26 @@ class Graph(object):
             #combining with exogenous variables
             #TODO: get the exogenous variables values and add with the proposed algorithm
             
-            self.loss = tf.reduce_mean(tf.squared_difference(self.x_res, self.output_tec))
+            #TODO: this is wrong, but why did it work (how did (32, 75, 1, 73) match with (32, 75, 73, 1))
+            #self.loss = tf.reduce_mean(tf.squared_difference(self.x_res, self.output_tec))
+            
+            #print self.x_res
+            #print self.output_tec
+            #explore a better loss function - how to use the inbuilt tf.losses.mean_squared_error which will handle overflow
+            #here we calculate the total sum and then divide - the inbuilt function will handle overflow
+            self.loss = tf.reduce_sum(tf.pow(self.x_res - self.output_tec, 2)) / tf.cast((self.x_res.shape[0]), tf.float32)
             
             #training scheme
-            self.global_step = tf.Variable(0, name='global_step', trainable=False)
+            #self.global_step = tf.Variable(0, name='global_step', trainable=False)
             
             #using ADAM optimizer with beta1=0.8, beta2=0.999 and epsilon=1e-7
-            self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon)
-            self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
+            #self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon)
+            #self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
+            
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon).minimize(self.loss)
             
             #loss summary
             tf.summary.scalar('loss', self.loss)
             self.merged = tf.summary.merge_all()
             
+            self.saver = tf.train.Saver(max_to_keep=None)
