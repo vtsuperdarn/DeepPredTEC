@@ -126,10 +126,10 @@ if __name__ == '__main__':
                     x_trend = np.array(x_batch[:, 2].tolist())
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
-                                                        feed_dict={g.c_tec: x_closeness,
-                                                                   g.p_tec: x_period,
-                                                                   g.t_tec: x_trend,
-                                                                   g.output_tec: y_batch})
+                                                feed_dict={g.c_tec: x_closeness,
+                                                           g.p_tec: x_period,
+                                                           g.t_tec: x_trend,
+                                                           g.output_tec: y_batch})
                     #accuracy_val += acc
                     loss_val += loss_v
                     val_writer.add_summary(summary, b + num_batches * epoch)
