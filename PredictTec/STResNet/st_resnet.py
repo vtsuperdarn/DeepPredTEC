@@ -13,18 +13,25 @@ class Graph(object):
     def __init__(self):
         self.graph = tf.Graph()
         with self.graph.as_default():
-            B, H, W, C, P, T, O, F, U  = param.batch_size, param.map_height, param.map_width, param.closeness_sequence_length, param.period_sequence_length, param.trend_sequence_length, param.num_of_output_tec_maps ,param.num_of_filters, param.num_of_residual_units
+            B, H, W, C, P, T, O, F, U, V, L, S, N  = param.batch_size, param.map_height, param.map_width, param.closeness_sequence_length, param.period_sequence_length, param.trend_sequence_length, param.num_of_output_tec_maps ,param.num_of_filters, param.num_of_residual_units, param.exo_values, param.look_back, param.lstm_size, param.num_layers 
             
-            #get inputs and outputs
-            #self.c_tec, self.p_tec, self.t_tec, self.output_tec = my.get_batch_data()
-            
+            #get inputs and outputs            
             #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
             self.c_tec = tf.placeholder(tf.float32, shape=[B, H, W, C], name="closeness_tec_maps")
             self.p_tec = tf.placeholder(tf.float32, shape=[B, H, W, P], name="period_tec_maps")
             self.t_tec = tf.placeholder(tf.float32, shape=[B, H, W, T], name="trend_tec_maps")
             self.output_tec = tf.placeholder(tf.float32, shape=[B, H, W, O], name="output_tec_map") 
             
-            #print "place"
+            self.exogenous = tf.placeholder(tf.float32, shape=[B, L, V], name="exogenous")
+            
+            
+            #processing with exogenous variables
+            #this will be of shape (batch_size, lstm_size)
+            self.external = my.exogenous_module(self.exogenous, S, N)
+            #shape (batch_size, 1, lstm_size)
+            self.external = tf.expand_dims(self.external, 1)
+            print self.external.shape
+            
             #ResNet architecture for the three modules
             #module 1: Capturing the closeness(recent)
             self.closeness_output = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=(7, 7), scope="closeness_input", reuse=None)
@@ -41,27 +48,29 @@ class Graph(object):
             self.trend_output = my.ResNet(inputs=self.trend_output, filters=F, kernel_size=(7, 7), repeats=U, scope="resnet", reuse=True)
             self.trend_output = my.ResOutput(inputs=self.trend_output, filters=1, kernel_size=(7, 7), scope="resnet_output", reuse=True)
             
-            # parameter-matrix-based fusion
-            self.x_res = my.Fusion(self.closeness_output, self.period_output, self.trend_output, scope="fusion", shape=[W, W])
+            #TODO: combining the exogenous and each module output
+            #populating the exogenous variable
+            self.val = tf.tile(self.external, [1, H*W, 1])
+            self.exo = tf.reshape(self.val, [B, H, W, S])
             
-            #combining with exogenous variables
-            #TODO: get the exogenous variables values and add with the proposed algorithm
+            #concatenate the modules output with the exogenous module output
+            self.close_concat = tf.concat([self.exo, self.closeness_output], 3, name="close_concat")
+            self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
+            self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
             
-            #TODO: this is wrong, but why did it work (how did (32, 75, 1, 73) match with (32, 75, 73, 1))
-            #self.loss = tf.reduce_mean(tf.squared_difference(self.x_res, self.output_tec))
+            #last convolutional layer for getting information from exo and each of the modules
+            self.exo_close = tf.layers.conv2d(self.close_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_close") 
+            self.exo_period = tf.layers.conv2d(self.period_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_period") 
+            self.exo_trend = tf.layers.conv2d(self.trend_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_trend") 
             
-            #print self.x_res
-            #print self.output_tec
-            #explore a better loss function - how to use the inbuilt tf.losses.mean_squared_error which will handle overflow
+            
+            # parameter-matrix-based fusion of the outputs after combining with exo
+            self.x_res = my.Fusion(self.exo_close, self.exo_period, self.exo_trend, scope="fusion", shape=[W, W])
+            
+            
             #here we calculate the total sum and then divide - the inbuilt function will handle overflow
             self.loss = tf.reduce_sum(tf.pow(self.x_res - self.output_tec, 2)) / tf.cast((self.x_res.shape[0]), tf.float32)
             
-            #training scheme
-            #self.global_step = tf.Variable(0, name='global_step', trainable=False)
-            
-            #using ADAM optimizer with beta1=0.8, beta2=0.999 and epsilon=1e-7
-            #self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon)
-            #self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
             
             self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon).minimize(self.loss)
             
