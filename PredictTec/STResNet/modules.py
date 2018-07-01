@@ -8,37 +8,28 @@ import tensorflow as tf
 import numpy as np
 from params import Params as param
 
-def get_train_batch_data():
-    '''
-    Gets the input data for training the model 
-    '''
-    inputs = pickle.load(open("xdata.pkl", "r"))
-    outputs = pickle.load(open("ydata.pkl", "r"))
+
+def lstm_cell(lstm_size):
+  return tf.nn.rnn_cell.LSTMCell(lstm_size, state_is_tuple=True)
+  
+
+def exogenous_module(inputs, lstm_size, num_layers=2):
     
-    split_train = int(len(tec_maps)*0.4)
-    train_tec = tec_maps[ : split_train]
-    test_tec = tec_maps[split_train : -1]
+    #stacked lstm implementation
+    lstm_cells1 = [tf.contrib.rnn.LSTMCell(lstm_size, forget_bias=1.0, use_peepholes=True, activation=tf.nn.relu) for _ in range(num_layers)]
+    stacked_lstm1 = tf.contrib.rnn.MultiRNNCell(lstm_cells1)
+    annotations, state = tf.nn.dynamic_rnn(stacked_lstm1, inputs=inputs, dtype=tf.float32, time_major=False, scope="lstm")
+
     
+    #single layer lstm
+    #annotations, state = tf.nn.dynamic_rnn(lstm_cell(lstm_size), inputs=inputs, dtype=tf.float32, scope="lstm")
     
-    x_c_w = tf.convert_to_tensor(x_c_w, tf.int32)
-    x_c_c = tf.convert_to_tensor(x_c_c, tf.int32)
-    x_q_w = tf.convert_to_tensor(x_q_w, tf.int32)
-    x_q_c = tf.convert_to_tensor(x_q_c, tf.int32)
-    y = tf.convert_to_tensor(y, tf.int32)
-    
-    #TODO: get the respective tensors from the train file and convert it into a tensor
-    
-    #create input queues
-    input_queues = tf.train.slice_input_producer([c_tec, p_tec, t_tec, output_tec])
-    
-    # create batch queues
-    c_tec, p_tec, t_tec, output_tec = tf.train.shuffle_batch(inputs, 
-                                                             num_threads=8, 
-                                                             batch_size=param.batch_size, 
-                                                             capacity=param.batch_size*64, 
-                                                             min_after_dequeue=param.batch_size*32, 
-                                                             allow_smaller_final_batch=False)    
-    return c_tec, p_tec, t_tec, output_tec           
+    annotations = tf.transpose(annotations, [1, 0, 2])
+    #extracting the last annotation or hidden state
+    #(Batch_size, lstm_size)
+    output = tf.gather(annotations, int(annotations.get_shape()[0]) -1)      
+    return output
+        
         
 def ResUnit(inputs, filters, kernel_size, strides, scope, reuse=None):   
     '''
