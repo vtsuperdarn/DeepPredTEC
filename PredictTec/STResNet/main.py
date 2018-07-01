@@ -22,7 +22,7 @@ if __name__ == '__main__':
     val_writer = tf.summary.FileWriter('./logdir/val', g.loss.graph)   
     
     
-    for i in range(1, 71, 10):  
+    for i in range(1, 71, 5):  
         
         x_closeness = []
         x_period = []
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         y = []
         X = []
         
-        for file_no in range(i, i+10):
+        for file_no in range(i, i+5):
             with h5py.File("output_files/xcloseness_"+str(file_no)+".h5", 'r') as hf:
                 x_closeness += hf["xcloseness_"+str(file_no)][:].tolist()
             with h5py.File("output_files/xperiod_"+str(file_no)+".h5", 'r') as hf:
@@ -97,6 +97,11 @@ if __name__ == '__main__':
                     #print ("before")
                     x_batch, y_batch = next(train_batch_generator)
                     #print ("after")
+                    
+                    #TODO 
+                    #dummy exogenous variables generation
+                    exogenous = np.random.rand(param.batch_size, param.look_back, param.exo_values)
+                    
                     x_closeness = np.array(x_batch[:, 0].tolist())
                     x_period = np.array(x_batch[:, 1].tolist())
                     x_trend = np.array(x_batch[:, 2].tolist())
@@ -109,7 +114,8 @@ if __name__ == '__main__':
                                                         feed_dict={g.c_tec: x_closeness,
                                                                    g.p_tec: x_period,
                                                                    g.t_tec: x_trend,
-                                                                   g.output_tec: y_batch})
+                                                                   g.output_tec: y_batch,
+                                                                   g.exogenous: exogenous})
                     #print ("endd")                                               
                     #accuracy_train += acc
                     loss_train = loss_tr * param.delta + loss_train * (1 - param.delta)
@@ -121,15 +127,20 @@ if __name__ == '__main__':
                 for b in tqdm(range(num_batches)):
                     x_batch, y_batch = next(test_batch_generator)
                     
+                    #TODO
+                    #dummy exogenous variables generation
+                    exogenous = np.random.rand(param.batch_size, param.look_back, param.exo_values)
+                    
                     x_closeness = np.array(x_batch[:, 0].tolist())
                     x_period = np.array(x_batch[:, 1].tolist())
                     x_trend = np.array(x_batch[:, 2].tolist())
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
-                                                feed_dict={g.c_tec: x_closeness,
-                                                           g.p_tec: x_period,
-                                                           g.t_tec: x_trend,
-                                                           g.output_tec: y_batch})
+                                                        feed_dict={g.c_tec: x_closeness,
+                                                                   g.p_tec: x_period,
+                                                                   g.t_tec: x_trend,
+                                                                   g.output_tec: y_batch,
+                                                                   g.exogenous: exogenous})
                     #accuracy_val += acc
                     loss_val += loss_v
                     val_writer.add_summary(summary, b + num_batches * epoch)
