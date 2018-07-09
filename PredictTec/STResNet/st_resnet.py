@@ -28,7 +28,7 @@ class Graph(object):
             #processing with exogenous variables
             #this will be of shape (batch_size, lstm_size)
             self.external = my.exogenous_module(self.exogenous, S, N)
-            #shape (batch_size, 1, lstm_size)
+            #shape (batch_size, 1, lstm_size) as we need to tile it
             self.external = tf.expand_dims(self.external, 1)
             print self.external.shape
             
@@ -48,7 +48,7 @@ class Graph(object):
             self.trend_output = my.ResNet(inputs=self.trend_output, filters=F, kernel_size=(7, 7), repeats=U, scope="resnet", reuse=True)
             self.trend_output = my.ResOutput(inputs=self.trend_output, filters=1, kernel_size=(7, 7), scope="resnet_output", reuse=True)
             
-            #TODO: combining the exogenous and each module output
+            #combining the exogenous and each module output
             #populating the exogenous variable
             self.val = tf.tile(self.external, [1, H*W, 1])
             self.exo = tf.reshape(self.val, [B, H, W, S])
@@ -58,11 +58,14 @@ class Graph(object):
             self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
             self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
             
+            print "close ", self.closeness_output.shape
+            
             #last convolutional layer for getting information from exo and each of the modules
             self.exo_close = tf.layers.conv2d(self.close_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_close") 
             self.exo_period = tf.layers.conv2d(self.period_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_period") 
             self.exo_trend = tf.layers.conv2d(self.trend_concat, 1, kernel_size=(7, 7), strides=(1,1), padding="SAME", name="exo_trend") 
             
+            print "exo ", self.exo_close.shape
             
             # parameter-matrix-based fusion of the outputs after combining with exo
             self.x_res = my.Fusion(self.exo_close, self.exo_period, self.exo_trend, scope="fusion", shape=[W, W])

@@ -24,7 +24,6 @@ class Params(object):
     lr = 0.001
     num_epochs = 20
     delta = 0.5
-    model_path = './model'
-    logdir = "train"
+    model_path = './exo_model'
     
 

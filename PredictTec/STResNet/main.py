@@ -18,9 +18,13 @@ if __name__ == '__main__':
     print ("Computation graph for ST-ResNet loaded\n")
     
     
-    train_writer = tf.summary.FileWriter('./logdir/train', g.loss.graph)
-    val_writer = tf.summary.FileWriter('./logdir/val', g.loss.graph)   
+    train_writer = tf.summary.FileWriter('./exo_logdir/train', g.loss.graph)
+    val_writer = tf.summary.FileWriter('./exo_logdir/val', g.loss.graph)   
     
+    ctr = 0
+    
+    #loading exogenous data points
+    exo = np.load("exogenous_jan.npy")
     
     for i in range(1, 71, 5):  
         
@@ -40,6 +44,7 @@ if __name__ == '__main__':
             with h5py.File("output_files/ydata_"+str(file_no)+".h5", 'r') as hf:
                 y += hf["ydata_"+str(file_no)][:].tolist()               
             print "Loaded file {}".format(file_no)
+         
             
         x_closeness = np.array(x_closeness)  
         x_period = np.array(x_period)  
@@ -49,15 +54,18 @@ if __name__ == '__main__':
         x_period = np.transpose(np.squeeze(x_period), (0, 2, 3, 1))
         x_trend = np.transpose(np.squeeze(x_trend), (0, 2, 3, 1))
       
-        #x_closeness = np.random.rand(20,75,73,12)
-        #x_period = np.random.rand(20,75,73,24)
-        #x_trend = np.random.rand(20,75,73,8)
-        #y = np.random.rand(20, 75, 73, 1)
-
-        print x_closeness[0].shape
+              
+        selected_exo = exo[ctr:ctr+x_closeness.shape[0], :] 
+        ctr += x_closeness.shape[0]
+        print "exo ", selected_exo.shape
+      
+        print np.amax(selected_exo)
+        print "closeness ", x_closeness.shape
+        
+        #print selected_exo[0].tolist()
         
         for j in range(x_closeness.shape[0]):
-            X.append([x_closeness[j].tolist(), x_period[j].tolist(), x_trend[j].tolist()])
+            X.append([x_closeness[j].tolist(), x_period[j].tolist(), x_trend[j].tolist(), selected_exo[j].tolist()])
     
         
         print len(X)
@@ -98,24 +106,25 @@ if __name__ == '__main__':
                     x_batch, y_batch = next(train_batch_generator)
                     #print ("after")
                     
-                    #TODO 
-                    #dummy exogenous variables generation
-                    exogenous = np.random.rand(param.batch_size, param.look_back, param.exo_values)
                     
                     x_closeness = np.array(x_batch[:, 0].tolist())
                     x_period = np.array(x_batch[:, 1].tolist())
                     x_trend = np.array(x_batch[:, 2].tolist())
+                    exogenous = np.array(x_batch[:, 3].tolist())
+                    
                     #print x_closeness.shape
                     #print x_period.shape
                     #print x_trend.shape
                     #print ("startttt")
                     
-                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                    loss_tr, x_res, _, summary = sess.run([g.loss, g.x_res, g.optimizer, g.merged],
                                                         feed_dict={g.c_tec: x_closeness,
                                                                    g.p_tec: x_period,
                                                                    g.t_tec: x_trend,
                                                                    g.output_tec: y_batch,
                                                                    g.exogenous: exogenous})
+                    #print x_res.shape
+                    #print x_res[0]
                     #print ("endd")                                               
                     #accuracy_train += acc
                     loss_train = loss_tr * param.delta + loss_train * (1 - param.delta)
@@ -127,13 +136,11 @@ if __name__ == '__main__':
                 for b in tqdm(range(num_batches)):
                     x_batch, y_batch = next(test_batch_generator)
                     
-                    #TODO
-                    #dummy exogenous variables generation
-                    exogenous = np.random.rand(param.batch_size, param.look_back, param.exo_values)
                     
                     x_closeness = np.array(x_batch[:, 0].tolist())
                     x_period = np.array(x_batch[:, 1].tolist())
                     x_trend = np.array(x_batch[:, 2].tolist())
+                    exogenous = np.array(x_batch[:, 3].tolist())
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                                         feed_dict={g.c_tec: x_closeness,
@@ -154,4 +161,4 @@ if __name__ == '__main__':
             g.saver.save(sess, param.model_path+"/current")
     train_writer.close()
     val_writer.close()
-    print("Run 'tensorboard --logdir=./logdir' to checkout tensorboard logs.")
+    print("Run 'tensorboard --logdir=./exo_logdir' to checkout tensorboard logs.")

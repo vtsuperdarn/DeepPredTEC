@@ -16,13 +16,13 @@ def lstm_cell(lstm_size):
 def exogenous_module(inputs, lstm_size, num_layers=2):
     
     #stacked lstm implementation
-    lstm_cells1 = [tf.contrib.rnn.LSTMCell(lstm_size, forget_bias=1.0, use_peepholes=True, activation=tf.nn.relu) for _ in range(num_layers)]
-    stacked_lstm1 = tf.contrib.rnn.MultiRNNCell(lstm_cells1)
-    annotations, state = tf.nn.dynamic_rnn(stacked_lstm1, inputs=inputs, dtype=tf.float32, time_major=False, scope="lstm")
+    #lstm_cells1 = [tf.contrib.rnn.LSTMCell(lstm_size, forget_bias=1.0, use_peepholes=True, activation=tf.nn.relu) for _ in range(num_layers)]
+    #stacked_lstm1 = tf.contrib.rnn.MultiRNNCell(lstm_cells1)
+    #annotations, state = tf.nn.dynamic_rnn(stacked_lstm1, inputs=inputs, dtype=tf.float32, time_major=False, scope="lstm")
 
     
     #single layer lstm
-    #annotations, state = tf.nn.dynamic_rnn(lstm_cell(lstm_size), inputs=inputs, dtype=tf.float32, scope="lstm")
+    annotations, state = tf.nn.dynamic_rnn(lstm_cell(lstm_size), inputs=inputs, dtype=tf.float32, scope="lstm")
     
     annotations = tf.transpose(annotations, [1, 0, 2])
     #extracting the last annotation or hidden state
