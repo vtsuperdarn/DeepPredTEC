@@ -21,7 +21,8 @@ if __name__ == '__main__':
     x_trend = []
     y = []
     X = []
-    ctr = 3001
+    #for getting the starting date of the prediction: 150*20 + 288, from 288 index the tec maps are considered for creating the data points.
+    ctr = 3000 + 288
     
     #loading exogenous data points
     exo = np.load("exogenous_jan.npy")
