@@ -3,7 +3,6 @@ markdown: kramdown
 permalink: /blog/:year/:month/:day/:title
 url: "https://github.com/vtsuperdarn/"
 
-
 title: DeepPredTEC
 description: Deep Learning on Predicting GPS TEC Maps
 show_downloads: true
@@ -16,4 +15,3 @@ google_analytics:
 # refer to http://shopify.github.io/liquid/filters/date/ if you want to customize this
 blog:
   date_format: "%b %-d, %Y"
-
