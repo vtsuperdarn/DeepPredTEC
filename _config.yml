@@ -2,3 +2,18 @@ theme: jekyll-theme-cayman
 markdown: kramdown
 permalink: /blog/:year/:month/:day/:title
 url: "https://github.com/vtsuperdarn/"
+
+
+title: DeepPredTEC
+description: Deep Learning on Predicting GPS TEC Maps
+show_downloads: true
+
+baseurl: "/blog" # change this to the subpath of your site, e.g. /blog. Leave it empty if you don't need it.
+url: "https://vtsuperdarn.github.io/DeepPredTEC/" # change this to the base hostname & protocol for your site
+
+google_analytics:
+# cayman-blog date format
+# refer to http://shopify.github.io/liquid/filters/date/ if you want to customize this
+blog:
+  date_format: "%b %-d, %Y"
+
