@@ -1,0 +1,141 @@
+---
+layout: post
+title: GSOC 2018 Project Part 1
+date: 2018-06-17
+---
+
+## Title
+Deep Predictive Models for Predicting GPS TEC Maps
+
+## Abstract
+My project is on building an accurate, deep neural predictive model for Global Positioning System - Total Electron Count (GPS TEC) maps. GPS TEC Map (Global Positioning System - Total Electron Count) is an important quantity of the ionosphere for analysis of space weather. Building an accurate predictive model for TEC maps will help in anticipating adverse ionospheric events (ex: solar storms), thereby safeguarding critical communication, energy and navigation infrastructure.
+
+In the first phase of the project, I aim to get familiar with the GPS TEC maps dataset and implement the first proposed deep learning model called Spatio-Temporal Residual Networks. 
+
+In the second phase of the project, I aim to fine tune the first model to get better accuracy and results. Then move on to implementing the second proposed model called Boosted LSTM Network. 
+
+
+## Project Outline
+<table>
+<thead>
+<tr>
+<th>S.No.</th>
+<th>Step</th>
+<th>Status</th>
+<th>Date</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+</tr>
+<tr>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+</tr>
+<tr>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+<td>A header</td>
+<td>A table</td>
+</tr>
+</tbody>
+</table>
+
+## Timeline 1: May 14 to May 28
+* Read about GPS TEC Maps, IMF data and other geomagnetic indices  
+* Plotting the TEC Maps
+* Discussion on the specifications of ST-ResNet Architecture
+
+## GPS TEC Maps
+TEC is the total number of electrons integrated between two points, along a tube of one meter squared cross section. It is a descriptive quantity for the ionosphere of the Earth. It can be used for anticipating adverse ionospheric events like solar storms. For the project, we use GPS TEC Maps provided by the MIT Haystack Observatory (Madrigal database). This data is pre-processed using median filtering and is available at the SuperDARN database of Virginia Tech. 
+
+There are two types of TEC maps available: Raw TEC maps and Median filtered TEC maps. We focus on median filtered TEC maps. The TEC maps are stored in .txt files in a tabular format. The major columns are date, time, magnetic latitude, magnetic longitude, tec values, degree of lat. resolution and degree of long. resoltion. The TEC values are recorded at a resolution of 5 minutes. We focus on the North-American sector of the TEC maps whose magnetic latitude and longitudes ranges are [15, 89] and [250, 360], [0, 34]. This gives us the TEC maps in matrix of shape (75, 73).
+
+We can visualize the TEC map by plotting using matplotlib function imshow or pcolormesh in python. The sample plot is shown in the figure below.
+
+![Sample TEC Plot]({{site.url}}/assets/sample_tec.png)
+*Sample TEC Plot*
+
+Apart from the GPS TEC maps we also plan to use other exogenous variables for better model prediction. The list of exogenous variables are as follows:
+* AU index, AL index (Auroral index horizontal component disturbances)
+* Sym-H index, AsyH index (longitudinally symmetric/asymmetric disturbance index)
+* Bz - OMNI IMF z component
+* By - OMNI IMF y component
+* Vx, np (proton ratio), f10.7 (daily flux density), dipole tilt
+
+
+## Motivation 
+We use deep learning models because of the availability of large scale input TEC maps and presence of complex dependencies (correlation) between the time series TEC Maps. TEC maps are two dimensional which provides the spatio properties and the time series nature between the TEC maps brings in the temporal property. Using these properties we design our first model called Spatio-Temporal Residual Networks.
+
+## ST-ResNet Architecture
+Spatio-Temporal Residual Networks (ST-ResNet) is a deep learning model build using Residual Networks which are a better variant of Convolutional Neural Networks (CNNs). The original Residual Network (ResNet) is a 152 layer network architecture which is used for classification, detection, and localization of objects. It won ImageNet Large Scale Visual Recognition Competition (ILSVRC) 2015 challenge. In general with increasing depth, neural networks suffer from vanishing gradient problem. Residual links in the network overcomes this problem. Deep residual networks helps in creating complex and abstract features.
+
+
+The input to the ST-ResNet model is a 3D volume / tensor of past TEC maps stacked on top of each other. Residual Networks in the model captures the spatial dependency within each individual tec map by convolving along the width and height axes of the TEC maps. The key observation is that a convolution along the depth axis captures temporal dependency since the depth axis is considered as the time variable.
+
+Further, the above model is replicated three times to capture temporal dependencies, classified as closeness(recent), period(near) and trend(distant), each with an increasing time period of repetition. The previous immediate 12 TEC maps which are at a time resolution of 5 mins in the span of one hour forms the input for closeness module. The previous TEC maps at a time resoltion of one hour over the span of one day (24 in total) forms the input for period module. Finally, the TEC maps over the span of one previous day at a time resolution of three hours (8 in total) forms in the input for trend module.
+
+Along with the Residual Network modules, for closeness, period and trend, we have a module for handling the IMF (exogenous) data. The module is based on Long-Short Term Memory (LSTM) which is further integrated with the main architecture for boosting the effectiveness of the feature vector. The model architecture is shown in the figure below.
+
+![ST-ResNet Architecture]({{site.url}}/assets/st_resnet.png)
+
+## Timeline 2: May 29 to June 11
+* Setting up input data pipeline
+* Creating TEC data points for the model
+* Implementing ST-ResNet Architecture in Tensorflow
+
+We create data inputs from the given .txt files of TEC maps. We first read and extract the TEC values and store them as 2D matrices. The rows of the matrix represents the latitudes and the columns represent the longitudes. We make of pandas dataframe to read the values from .txt file and use the pivot function on the dataframe object for selecting the required TEC values. Once we get all TEC maps in matrix format we run the sampling algorithm for creating the data inputs. The number of input TEC maps for each of the ResNet modules are hyperparamters which will be tuned later. As an example, one data input consists of three different stack of TEC maps of size (12, 75, 73) as closeness input, (24, 75, 73) as period input and (8, 75, 73) as trend input. 
+
+We have implemented ST-ResNet model in Tensorflow. The model is coded by following OOPs paradigm. The complex model architecture parts are abstracted through extensive use of functions which brings in more flexibility and helps in coding Tensorflow functionality like sharing of tensors. There are four major files `main.py`, `params.py`, `modules.py` and `st_resnet.py` which are implemented. 
+
+File structure and details:
+* `main.py`: This file contains the main program. The computation graph for ST-ResNet is built and launched in a session.
+* `params.py`: This file contains class Params for hyperparameter declarations.
+* `modules.py`: This file contain helper functions and custom neural layers. The functions help in abstracting the complexity of the architecture and Tensorflow features. These functions are being called in the st_resnet.py for defining the computational graph.
+* `st_resnet.py`: This file defines the Tensorflow computation graph for the ST-ResNet (Deep Spatio-temporal Residual Networks) architecture. The skeleton of the architecture from inputs to outputs in defined here using calls to functions defined in modules.py. Modularity ensures that the functioning of a component can be easily modified in modules.py without changing the skeleton of the ST-ResNet architecture defined in this file.
+
+The complete code for the model in Tensorflow is available at the GitHub Repository DeepPredTEC.  
+
+### Timeline 3: June 12 to June 17
+* Improving data pipeline  
+* Fine tuning the ST-ResNet model and plotting the results
+
+The data input files size is very large and we need an effective way of loading the data inputs as a batch to be able to train the model. We explore the yield function of python and also sqlite3 database for easy storing and retriving of TEC Maps. 
+
+The ST-ResNet model is trained using `AdamOptimizer` function of Tensorflow. Currently the model has been trained on a small subset of the data points. Sample output predicted by the model is shown in the figures below. 
+
+Sample with a comparatively lower loss (left figure is the predicted TEC map and the right one is the ground truth):
+
+![Prediction Output on a recent day]({{site.url}}/assets/output1.png)
+
+Sample with a comparatively higher loss(left figure is the predicted TEC map and the right one is the ground truth):
+
+![Prediction Output on a later day]({{site.url}}/assets/output2.png)
+
+## Presentation Slides
+
+
+## Furture Steps
+
+
+## People 
+<ul>
+<li>Sneha Singhania (sneha3295[at]gmail[dot]com)</li>
+<li>Bharat Kunduri (bharatr[at]vt[dot]edu)</li>
+<li>Muhammad Rafiq (rafiq[at]vt[dot]edu)</li>
+</ul> 
+
+## References
+* [https://github.com/vtsuperdarn/DeepPredTEC](https://github.com/vtsuperdarn/DeepPredTEC)
+* [https://www.haystack.mit.edu/atm/open/radar/index.html](https://www.haystack.mit.edu/atm/open/radar/index.html)
+* [Zhang, Junbo, Yu Zheng, and Dekang Qi. "Deep Spatio-Temporal Residual Networks for Citywide Crowd Flows Prediction." AAAI. 2017.](https://arxiv.org/pdf/1610.00081.pdf)
