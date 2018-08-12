@@ -1,4 +1,4 @@
 theme: jekyll-theme-cayman
 markdown: kramdown
 permalink: /blog/:year/:month/:day/:title
-url: "https://github.com/vtsuperdarn/DeepPredTEC"
+url: "https://vtsuperdarn.github.io/DeepPredTEC/"
