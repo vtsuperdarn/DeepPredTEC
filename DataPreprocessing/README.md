@@ -16,13 +16,13 @@ Enter the appropriate start date and end date in all the files whereever require
     
 2. Filling the missing TEC values in the generated numpy arrays.
 
-    $ python filter_tec_map.py  
+    ```$ python filter_tec_map.py``` 
 
 3. Creating the sqlite3 database for tracking the created TEC arrays and missing TEC arrays.
 
-    $ python create_tec_map_table.py
+    ```$ python create_tec_map_table.py```
 
 4. Using the database to fill the missing TEC arrays. 
 
-    $ python fill_missing_tec_map.py
+    ```$ python fill_missing_tec_map.py```
   
