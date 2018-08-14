@@ -12,7 +12,7 @@ Enter the appropriate start date and end date in all the files whereever require
 
 1. Reading and generating the TEC maps in 2D numpy array.
 
-    $ python generate_tec_map_files.py
+    ```$ python generate_tec_map_files.py```
     
 2. Filling the missing TEC values in the generated numpy arrays.
 
