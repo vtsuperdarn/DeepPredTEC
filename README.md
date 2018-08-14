@@ -4,4 +4,7 @@ Global Positioning System obtained Total Electron Content (GPS TEC) Map is an im
 # Google Summer of Code 2018
 * [Project Link](https://summerofcode.withgoogle.com/projects/#6628265427468288)
 * [Project Website](https://vtsuperdarn.github.io/DeepPredTEC/)
+
+# License 
+See the [LICENSE](LICENSE.md) file for license rights and limitations. 
  
