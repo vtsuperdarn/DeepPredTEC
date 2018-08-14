@@ -11,14 +11,18 @@ These files are used for pre-processing and storing the TEC maps in 2D numpy arr
 Enter the appropriate start date and end date in all the files whereever required and run the commands in the order given below. 
 
 1. Reading and generating the TEC maps in 2D numpy array.
+
     $ python generate_tec_map_files.py
     
 2. Filling the missing TEC values in the generated numpy arrays.
+
     $ python filter_tec_map.py  
 
 3. Creating the sqlite3 database for tracking the created TEC arrays and missing TEC arrays.
+
     $ python create_tec_map_table.py
 
 4. Using the database to fill the missing TEC arrays. 
+
     $ python fill_missing_tec_map.py
   
