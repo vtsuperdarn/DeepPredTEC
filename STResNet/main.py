@@ -24,7 +24,7 @@ val_writer = tf.summary.FileWriter('./logdir/val', g.loss.graph)
 # initialize parameters
 # current_datetime = dt.datetime(2015, 1, 2, 10, 5)
 #file_dir="/home/sd-guest/Documents/data/tec_filled/"
-file_dir="../../data/tec_map/filled/"
+file_dir=param.file_dir
 
 #closeness is sampled 12 times every 5 mins, lookback = (12*5min = 1 hour)
 #freq 1 is 5mins
@@ -38,8 +38,8 @@ period_size = param.period_sequence_length
 trend_size = param.trend_sequence_length
 
 # get date ranges
-start_date = dt.datetime(2015, 1, 2)
-end_date = dt.datetime(2015, 1, 3)
+start_date = param.start_date
+end_date = param.end_date
 
 # We need OMNI data for training
 # get all corresponding dates for batches
@@ -64,9 +64,9 @@ path = param.model_path + "_values"
 os.makedirs(path)
 
 # setting appropriate vars and reading 
-omn_dbdir = "../../data/sqlite3/"
-omn_db_name = "omni_imf_res_5.sqlite"
-omn_table_name = "IMF"
+omn_dbdir = param.omn_dbdir
+omn_db_name = param.omn_db_name
+omn_table_name = param.omn_table_name
 omn_train=True
 
 start_date_omni =  start_date - dt.timedelta(days=param.load_window)
@@ -77,7 +77,7 @@ omnObj = OmnData( start_date_omni, end_date_omni, omn_dbdir, omn_db_name, omn_ta
 #numpy.random.shuffle(batch_date_arr)
 
 # divide the dates into train and test
-train_test_ratio = 0.8
+train_test_ratio = param.train_test_ratio
 train_ind = int(round((train_test_ratio*batch_date_arr.shape[0]), 0))
 date_arr_train = batch_date_arr[:train_ind]
 date_arr_test = batch_date_arr[train_ind:]

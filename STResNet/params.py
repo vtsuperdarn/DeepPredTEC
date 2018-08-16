@@ -1,3 +1,5 @@
+import datetime
+
 '''
 This file contains class Params for hyperparameter declarations
 '''
@@ -6,6 +8,16 @@ class Params(object):
     batch_size = 32         #defines the batch size to load in the tec data points
     map_height = 75         # no of latitudes
     map_width = 73          #number of longitudes
+    # TEC data loading location and times
+    file_dir = "../../data/tec_map/filled/"
+    start_date = datetime.datetime(2015, 1, 2)
+    end_date = datetime.datetime(2015, 1, 3)
+    # OMNI IMF data
+    omn_dbdir = "../../data/sqlite3/"
+    omn_db_name = "omni_imf_res_5.sqlite"
+    omn_table_name = "IMF"
+    # train to test ratio
+    train_test_ratio = 0.8
     tec_resolution = 5
     closeness_freq = 1      #no of jumps for sampling. If 1 at resolution of 5 mins tec maps is taken, 2 then 10 mins resolution     
     period_freq = 12        #no of jumps for sampling. If 12 at resolution of 1 hour tec maps is taken, 24 then 2 hours resolution 
