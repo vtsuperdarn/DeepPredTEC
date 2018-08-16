@@ -104,7 +104,7 @@ if __name__ == "__main__":
     mlat_min = 15.
     mlon_west = 250
     mlon_east = 34
-    generate_tec_map_files(sdate, edate=edate, 
+    generate_tec_map_weights(sdate, edate=edate, 
                            mlat_min=mlat_min, mlon_west=mlon_west,
                            mlon_east=mlon_east,
                            inpDir=inpDir, outDir=outDir)
