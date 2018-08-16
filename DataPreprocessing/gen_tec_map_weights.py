@@ -100,7 +100,7 @@ def generate_tec_map_weights(nan_replace=1, mlat_min=15.,
 if __name__ == "__main__":
 
     inpDir = "/sd-data/med_filt_tec/"
-    outDir="../data/tec_map/original/"    # Make sure you have this folder
+    outDir="/home/sd-guest/Documents/data/tec_weights/"    # Make sure you have this folder
     mlat_min = 15.
     mlon_west = 250
     mlon_east = 34
