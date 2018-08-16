@@ -22,7 +22,7 @@ def generate_tec_map_weights(nan_replace=1, mlat_min=15.,
     # This nested dict will have a tuple indicating
     # the range of values(mlats/mlons) where weights 
     # need to be changed
-    weightDict = { "mlats":{ (45,70) : 2, (80,90) : 2 },
+    weightDict = { "mlats":{ (45,70) : 2., (80,90) : 2. },
                    "mlons":None}
     # we'll read in TEC file data and replace med_tec values
     # with weights, this way we'll be sure to place weights
@@ -104,7 +104,8 @@ if __name__ == "__main__":
     mlat_min = 15.
     mlon_west = 250
     mlon_east = 34
-    generate_tec_map_weights(sdate, edate=edate, 
+    nan_replace = 1.
+    generate_tec_map_weights(nan_replace=nan_replace, 
                            mlat_min=mlat_min, mlon_west=mlon_west,
                            mlon_east=mlon_east,
                            inpDir=inpDir, outDir=outDir)
