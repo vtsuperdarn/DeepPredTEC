@@ -15,7 +15,8 @@ class BatchDateUtils(object):
     
     def __init__(self, start_date, end_date, batch_size, resolution,\
                 closeness_freq, closeness_size, period_freq, period_size,\
-                trend_freq, trend_size, num_outputs, output_freq):
+                trend_freq, trend_size, num_outputs, output_freq,\
+                closeness_channel, period_channel, trend_channel):
         """
         set up the parameters
         """
@@ -23,12 +24,19 @@ class BatchDateUtils(object):
         self.end_date = end_date
         self.batch_size = batch_size
         self.resolution = resolution
+        
+        self.closeness_channel = closeness_channel
         self.closeness_freq = closeness_freq
-        self.period_freq = period_freq
-        self.trend_freq = trend_freq
         self.closeness_size = closeness_size
+        
+        self.period_channel = period_channel
+        self.period_freq = period_freq
         self.period_size = period_size
+        
+        self.trend_channel = trend_channel
+        self.trend_freq = trend_freq
         self.trend_size = trend_size
+
         self.num_outputs = num_outputs #this defines the num of output tec maps 
         self.output_freq = output_freq
         self.batch_dict = self._get_batch_dict()
@@ -54,22 +62,30 @@ class BatchDateUtils(object):
         # loop through all the data points in the batch and construct arrays
         dtms = [curr_time + datetime.timedelta(minutes=i*self.resolution)\
                 for i in range(self.batch_size)]
+        
         dp_dict = collections.OrderedDict()
+        
         for dtm in dtms :
+            
             sub_dp_dict = collections.OrderedDict()
+            
             # For future frame
             sub_dp_dict['future_dtm'] = [dtm + datetime.timedelta(minutes=i*self.output_freq*self.resolution)\
                         for i in range(1, self.num_outputs)]     
             # For near frames
-            sub_dp_dict['near_dtm'] = [dtm - datetime.timedelta(minutes=i*self.closeness_freq*self.resolution)\
-                        for i in range(self.closeness_size)]
+            if(self.closeness_channel == True):
+                sub_dp_dict['near_dtm'] = [dtm - datetime.timedelta(minutes=i*self.closeness_freq*self.resolution)\
+                            for i in range(self.closeness_size)]
             # For recent frames
-            sub_dp_dict['recent_dtm'] = [dtm - datetime.timedelta(minutes=i*self.period_freq*self.resolution)\
-                        for i in range(self.period_size)]
+            if(self.period_channel == True):
+                sub_dp_dict['recent_dtm'] = [dtm - datetime.timedelta(minutes=i*self.period_freq*self.resolution)\
+                            for i in range(self.period_size)]
             # For distant frames
-            sub_dp_dict['distant_dtm'] = [dtm - datetime.timedelta(minutes=i*self.trend_freq*self.resolution)\
-                           for i in range(self.trend_size)]
+            if(self.trend_channel == True):
+                sub_dp_dict['distant_dtm'] = [dtm - datetime.timedelta(minutes=i*self.trend_freq*self.resolution)\
+                               for i in range(self.trend_size)]
             dp_dict[dtm] = sub_dp_dict
+        
         return dp_dict
 
 
@@ -78,7 +94,8 @@ class TECUtils(object):
     Loading TEC data and creating batches
     in bulk
     """
-    def __init__(self, start_date, end_date, tec_dir, tec_resolution, load_window):
+    def __init__(self, start_date, end_date, tec_dir, tec_resolution,\
+                 load_window, closeness_channel, period_channel, trend_channel):
         """
         set up parameters and data
         """
@@ -89,6 +106,11 @@ class TECUtils(object):
         self.end_date = end_date + datetime.timedelta(days=load_window)
         self.tec_dir = tec_dir
         self.tec_resolution = tec_resolution
+        
+        self.closeness_channel = closeness_channel
+        self.period_channel = period_channel
+        self.trend_channel = trend_channel
+        
         # If you don't want to use dask comment the lines below
         self.tec_data = {}
         self._dask_bulk_load_tec()
@@ -145,15 +167,23 @@ class TECUtils(object):
         data_out = []
         # Loop through all the data points and get the data
         for dp_time in batch_time_dict.keys():
+            
             dp_time_dict = batch_time_dict[dp_time]
-            data_close.append( numpy.array( [ self.tec_data[k] for k in\
-                         dp_time_dict['near_dtm'] ] ).transpose() )
-            data_period.append( numpy.array( [ self.tec_data[k] for k in\
-                         dp_time_dict['recent_dtm'] ] ).transpose() )
-            data_trend.append( numpy.array( [ self.tec_data[k] for k in\
-                         dp_time_dict['distant_dtm'] ] ).transpose() )
+            
+            if(self.closeness_channel == True):
+                data_close.append( numpy.array( [ self.tec_data[k] for k in\
+                             dp_time_dict['near_dtm'] ] ).transpose() )
+            
+            if(self.period_channel == True): 
+                data_period.append( numpy.array( [ self.tec_data[k] for k in\
+                             dp_time_dict['recent_dtm'] ] ).transpose() )
+            
+            if(self.trend_channel == True):
+                data_trend.append( numpy.array( [ self.tec_data[k] for k in\
+                             dp_time_dict['distant_dtm'] ] ).transpose() )
+            
             data_out.append( numpy.array( [ self.tec_data[k] for k in\
                          dp_time_dict['future_dtm'] ] ).transpose() )
-        return ( numpy.array(data_close), numpy.array(data_period),\
-                     numpy.array(data_trend), numpy.array(data_out) )
+        
+        return ( numpy.array(data_close), numpy.array(data_period), numpy.array(data_trend), numpy.array(data_out) )
 
