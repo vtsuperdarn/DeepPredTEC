@@ -12,8 +12,8 @@ class Params(object):
     
     # TEC data loading location and times
     file_dir = "../../data/tec_map/filled/"
-    start_date = datetime.datetime(2015, 1, 2)
-    end_date = datetime.datetime(2015, 1, 3)
+    start_date = datetime.datetime(2015, 1, 3)
+    end_date = datetime.datetime(2015, 1, 4)
     
     # OMNI IMF data
     omn_dbdir = "../../data/sqlite3/"
@@ -23,7 +23,7 @@ class Params(object):
     # train to test ratio
     train_test_ratio = 0.8
 
-    independent_channels = True     #true if channels are independent, false if channels have shared parameter
+    independent_channels = False     #true if channels are independent, false if channels have shared parameter
         
     closeness_channel = True        #toggle for on/off
     closeness_freq = 1              #no of jumps for sampling. If 1 at resolution of 5 mins tec maps is taken, 2 then 10 mins resolution     
@@ -49,12 +49,12 @@ class Params(object):
     add_exogenous = True            #True if we want to include the exogenous variable else false
     imf_normalize = True            #toggled based on the requirement in main.py and get_prediction.py
     gru_size = 32           
-    #gru_num_layers = 3              #incase we use stacked GRU layer
+    gru_num_layers = 3              #incase we use stacked GRU layer
     
     #TODO initialize this
     #look_back = 
     
-    load_window = 1                 #for safety so that enough data is available to create the data points
+    load_window = 2                 #for safety so that enough data is available to create the data points
     
     epsilon = 1e-7
     beta1 = 0.8

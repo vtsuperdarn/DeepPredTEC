@@ -115,7 +115,7 @@ with tf.Session(graph=g.graph) as sess:
                 #TODO change the trend_freq with look_back
                 imf_batch = omnObj.get_omn_batch(current_datetime, param.batch_size, param.trend_freq, trend_size )
                 t2 = time.time()
-                print("IMF batch for training " + str(t2-t1))
+                print("\nTime to load IMF batch for training " + str(t2-t1))
                 t1 = time.time()
                 
                 if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
@@ -343,7 +343,7 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,

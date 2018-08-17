@@ -71,7 +71,7 @@ class BatchDateUtils(object):
             
             # For future frame
             sub_dp_dict['future_dtm'] = [dtm + datetime.timedelta(minutes=i*self.output_freq*self.resolution)\
-                        for i in range(1, self.num_outputs)]     
+                        for i in range(1, self.num_outputs+1)]     
             # For near frames
             if(self.closeness_channel == True):
                 sub_dp_dict['near_dtm'] = [dtm - datetime.timedelta(minutes=i*self.closeness_freq*self.resolution)\
