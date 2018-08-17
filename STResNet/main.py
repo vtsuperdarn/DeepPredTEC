@@ -1,4 +1,4 @@
-from st_resnet import Graph
+from st_resnet import STResNetShared, STResNetIndep
 import tensorflow as tf
 from params import Params as param
 import pandas as pd
@@ -13,10 +13,14 @@ from omn_utils import OmnData
 from batch_utils import BatchDateUtils, TECUtils
 
 
-# Parameters for tensor flow
-g = Graph()
-print ("Computation graph for ST-ResNet loaded\n")
+if(param.independent_channels == True): 
+    g = STResNetIndep()
+    print ("Computation graph for ST-ResNet with independent channels loaded\n")
 
+else:
+    g = STResNetShared()
+    print ("Computation graph for ST-ResNet with shared channels loaded\n")
+    
 train_writer = tf.summary.FileWriter('./logdir/train', g.loss.graph)
 val_writer = tf.summary.FileWriter('./logdir/val', g.loss.graph)
 
@@ -41,16 +45,18 @@ trend_size = param.trend_sequence_length
 start_date = param.start_date
 end_date = param.end_date
 
-# We need OMNI data for training
 # get all corresponding dates for batches
 batchObj = BatchDateUtils(start_date, end_date, param.batch_size, param.tec_resolution,\
                          param.closeness_freq, closeness_size, param.period_freq, period_size,\
-                         param.trend_freq, trend_size, param.num_of_output_tec_maps, param.output_freq)
+                         param.trend_freq, trend_size, param.num_of_output_tec_maps, param.output_freq,\
+                         param.closeness_channel, param.period_channel, param.trend_channel)
+
 batch_date_arr = np.array( list(batchObj.batch_dict.keys()) )
 
 # Bulk load TEC data
 t01 = time.time()
-tecObj = TECUtils(start_date, end_date, file_dir, param.tec_resolution, param.load_window)
+tecObj = TECUtils(start_date, end_date, file_dir, param.tec_resolution, param.load_window,\
+                 param.closeness_channel, param.period_channel, param.trend_channel)
 t02 = time.time()
 #print type(tecObj.tec_data)
 print("TEC bulk load time ---->" + str(t02-t01))
@@ -69,6 +75,7 @@ omn_db_name = param.omn_db_name
 omn_table_name = param.omn_table_name
 omn_train=True
 
+# Getting OMNI data for training
 start_date_omni =  start_date - dt.timedelta(days=param.load_window)
 end_date_omni =  end_date + dt.timedelta(days=param.load_window)
 omnObj = OmnData( start_date_omni, end_date_omni, omn_dbdir, omn_db_name, omn_table_name , omn_train, param.imf_normalize, path)
@@ -100,39 +107,152 @@ with tf.Session(graph=g.graph) as sess:
         # TRAINING
         for tr_ind, current_datetime in tqdm(enumerate(date_arr_train)):
             #print("Training date-->" + current_datetime.strftime("%Y%m%d-%H%M"))
-            # get the batch of data points
-            t1 = time.time()
-            curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-            
-            data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
-            
-            t2 = time.time()
-            print("tec batch for training " + str(t2-t1))
             
             #if we need to use the exogenous module
             if (param.add_exogenous == True):
                 #GET IMF batch data
                 t1 = time.time()
+                #TODO change the trend_freq with look_back
                 imf_batch = omnObj.get_omn_batch(current_datetime, param.batch_size, param.trend_freq, trend_size )
                 t2 = time.time()
                 print("IMF batch for training " + str(t2-t1))
                 t1 = time.time()
-                loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
-                                                    feed_dict={g.c_tec: data_close,
-                                                               g.p_tec: data_period,
-                                                               g.t_tec: data_trend,
-                                                               g.output_tec: data_out,
-                                                               g.exogenous: imf_batch})
-            #if we dont want to use the exogenous module                                                   
+                
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.p_tec: data_period,
+                                                                   g.t_tec: data_trend,
+                                                                   g.output_tec: data_out,
+                                                                   g.exogenous: imf_batch})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.p_tec: data_period,
+                                                                   g.output_tec: data_out,
+                                                                   g.exogenous: imf_batch})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.t_tec: data_trend,
+                                                                   g.output_tec: data_out,
+                                                                   g.exogenous: imf_batch})
+                                                                                                          
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.output_tec: data_out,
+                                                                   g.exogenous: imf_batch})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+            
+            #if we don't want to use the exogenous module                                                   
             else:
-                t1 = time.time()
-                loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
-                                                    feed_dict={g.c_tec: data_close,
-                                                               g.p_tec: data_period,
-                                                               g.t_tec: data_trend,
-                                                               g.output_tec: data_out})                                                   
-            t2 = time.time()
-            print("TF for training " + str(t2-t1))
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.p_tec: data_period,
+                                                                   g.t_tec: data_trend,
+                                                                   g.output_tec: data_out})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.p_tec: data_period,
+                                                                   g.output_tec: data_out})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.t_tec: data_trend,
+                                                                   g.output_tec: data_out})
+                                                                                                          
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
+                    
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    # get the batch of data points
+                    t1 = time.time()
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    t2 = time.time()
+                    print("tec batch for training " + str(t2-t1))
+                    
+                    t1 = time.time()
+                    loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
+                                                        feed_dict={g.c_tec: data_close,
+                                                                   g.output_tec: data_out})
+                    t2 = time.time()
+                    print("TF for training " + str(t2-t1))
 
             loss_train = loss_tr * param.delta + loss_train * (1 - param.delta)
             train_writer.add_summary(summary, tr_ind + len(date_arr_train) * epoch)
@@ -145,26 +265,100 @@ with tf.Session(graph=g.graph) as sess:
         # TESTING/VALIDATION
         for te_ind, current_datetime in tqdm(enumerate(date_arr_test)):
             #print("Testing date-->" + current_datetime.strftime("%Y%m%d-%H%M"))
-            # get the batch of data points
-            curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-            data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
             
             #if we need to use the exogenous module
             if (param.add_exogenous == True):
-                imf_batch = omnObj.get_omn_batch(current_datetime, param.batch_size, param.trend_freq,trend_size )
-                loss_v, summary = sess.run([g.loss, g.merged],
-                                        feed_dict={g.c_tec: data_close,
-                                                   g.p_tec: data_period,
-                                                   g.t_tec: data_trend,
-                                                   g.output_tec: data_out,
-                                                   g.exogenous: imf_batch})
-            #if we dont want to use the exogenous module  
+
+                #get the IMF data
+                #TODO change the trend freq
+                imf_batch = omnObj.get_omn_batch(current_datetime, param.batch_size, param.trend_freq,trend_size )                
+                
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.p_tec: data_period,
+                                                       g.t_tec: data_trend,
+                                                       g.output_tec: data_out,
+                                                       g.exogenous: imf_batch})
+                                                       
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.p_tec: data_period,
+                                                       g.output_tec: data_out,
+                                                       g.exogenous: imf_batch})
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.p_tec: data_trend,
+                                                       g.output_tec: data_out,
+                                                       g.exogenous: imf_batch}) 
+                                                                                                 
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.output_tec: data_out,
+                                                       g.exogenous: imf_batch}) 
+                                                       
+            #if we don't want to use the exogenous module  
             else:
-                loss_v, summary = sess.run([g.loss, g.merged],
-                                        feed_dict={g.c_tec: data_close,
-                                                   g.p_tec: data_period,
-                                                   g.t_tec: data_trend,
-                                                   g.output_tec: data_out})
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.p_tec: data_period,
+                                                       g.t_tec: data_trend,
+                                                       g.output_tec: data_out})
+                
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.p_tec: data_period,
+                                                       g.output_tec: data_out})
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.t_tec: data_trend,
+                                                       g.output_tec: data_out})                                       
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    # get the batch of data points
+                    curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    
+                    loss_v, summary = sess.run([g.loss, g.merged],
+                                            feed_dict={g.c_tec: data_close,
+                                                       g.output_tec: data_out})
+            
             loss_val += loss_v
             val_writer.add_summary(summary, te_ind + len(date_arr_test) * epoch)
         

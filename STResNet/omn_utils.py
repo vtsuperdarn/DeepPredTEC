@@ -87,6 +87,7 @@ class OmnData(object):
         Given an input time get an omni datapoint
         """
         dp_max_time = inpTime
+        #TODO change the minutes based on the longest day length we are looking at
         dp_min_time = inpTime - datetime.timedelta(minutes=(trend_size*trend_freq-1)*5)
         omn_data_point = self.omnDF[(self.omnDF["datetime"] >= dp_min_time) &\
                             (self.omnDF["datetime"] <= dp_max_time) ]
