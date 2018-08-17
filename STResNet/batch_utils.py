@@ -59,7 +59,7 @@ class BatchDateUtils(object):
             sub_dp_dict = collections.OrderedDict()
             # For future frame
             sub_dp_dict['future_dtm'] = [dtm + datetime.timedelta(minutes=i*self.output_freq*self.resolution)\
-                        for i in range(self.num_outputs)]     
+                        for i in range(1, self.num_outputs)]     
             # For near frames
             sub_dp_dict['near_dtm'] = [dtm - datetime.timedelta(minutes=i*self.closeness_freq*self.resolution)\
                         for i in range(self.closeness_size)]
