@@ -42,7 +42,7 @@ class STResNetShared(object):
                 self.trend_output = my.ResOutput(inputs=self.trend_resnet, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
                 
             if (param.add_exogenous == True):
-                #lookback for exogenous is same as trend freq*trend length
+                #TODO: lookback for exogenous is same as trend freq*trend length (have to change this)
                 self.exogenous = tf.placeholder(tf.float32, shape=[None, param.trend_freq*T, V], name="exogenous")
                 print ("exogenous variable", self.exogenous.shape)
                 
