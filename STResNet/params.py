@@ -23,7 +23,7 @@ class Params(object):
     # train to test ratio
     train_test_ratio = 0.8
 
-    independent_channels = True     #true if channels are independent, false if channels have shared parameter
+    independent_channels = False     #true if channels are independent, false if channels have shared parameter
         
     closeness_channel = True        #toggle for on/off
     closeness_freq = 1              #no of jumps for sampling. If 1 at resolution of 5 mins tec maps is taken, 2 then 10 mins resolution     
@@ -77,6 +77,8 @@ class Params(object):
     #saved_model = '/epoch_0' #'/epoch_X', for loading the model saved at X epoch
     
     saved_model_path = "" #enter the model name for getting the prediction, eg. "model_batch8_epoch1_resnet10_nresfltr12_nfltr12_of1_otec12_cf1_csl12_pf12_psl24_tf36_tsl8_gs32_ks55_exoT_nrmT_1.25040221214"
+    
+    loss_weight_matrix = "weight__mlat_45-70_2.0__mlat_80-90_2.0__mlon_None__weights.npy"
     
     logdir = "train"
     

@@ -102,9 +102,16 @@ class STResNetShared(object):
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 
             print ("output shape:", self.output_tec)
             
+            self.loss_weight_matrix = tf.placeholder(tf.float32, shape=[None, H, W, O], name="loss_weight_matrix") 
+            print ("loss_weight_matrix:", self.loss_weight_matrix)
+            
+            #scaling the error using the loss_weight_tensor - elementwise operation
+            self.tec_error = tf.multiply( tf.pow( (self.x_res - self.output_tec) , 2), self.loss_weight_matrix )
+            print ("tec_error:", self.tec_error.shape)
+            
             #here we calculate the total sum and then divide - the inbuilt function will handle overflow
             #self.loss = tf.reduce_sum(tf.pow(self.x_res - self.output_tec, 2)) / (self.x_res.shape[0]) - this is equivalent of below one - batch size is declared none - so can't use this form
-            self.loss = tf.reduce_mean(tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.pow((self.x_res - self.output_tec), 2), axis=3), axis=1), axis=1))
+            self.loss = tf.reduce_mean(tf.reduce_sum(tf.reduce_sum(tf.reduce_sum( self.tec_error, axis=3), axis=1), axis=1))
             
             self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon).minimize(self.loss)
             
@@ -213,9 +220,16 @@ class STResNetIndep(object):
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 
             print ("output shape:", self.output_tec)
             
+            self.loss_weight_matrix = tf.placeholder(tf.float32, shape=[None, H, W, O], name="loss_weight_matrix") 
+            print ("loss_weight_matrix:", self.loss_weight_matrix)
+            
+            #scaling the error using the loss_weight_tensor - elementwise operation
+            self.tec_error = tf.multiply( tf.pow( (self.x_res - self.output_tec) , 2), self.loss_weight_matrix )
+            print ("tec_error:", self.tec_error.shape)
+            
             #here we calculate the total sum and then divide - the inbuilt function will handle overflow
             #self.loss = tf.reduce_sum(tf.pow(self.x_res - self.output_tec, 2)) / (self.x_res.shape[0]) - this is equivalent of below one - batch size is declared none - so can't use this form
-            self.loss = tf.reduce_mean(tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.pow((self.x_res - self.output_tec), 2), axis=3), axis=1), axis=1))
+            self.loss = tf.reduce_mean(tf.reduce_sum(tf.reduce_sum(tf.reduce_sum( self.tec_error, axis=3), axis=1), axis=1))
             
             self.optimizer = tf.train.AdamOptimizer(learning_rate=param.lr, beta1=param.beta1, beta2=param.beta2, epsilon=param.epsilon).minimize(self.loss)
             

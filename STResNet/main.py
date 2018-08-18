@@ -89,6 +89,13 @@ train_ind = int(round((train_test_ratio*batch_date_arr.shape[0]), 0))
 date_arr_train = batch_date_arr[:train_ind]
 date_arr_test = batch_date_arr[train_ind:]
 
+weight_matrix = np.load(param.loss_weight_matrix)
+#converting by repeating the weight_matrix into a desired shape of (B, O, H, W)
+weight_matrix_expanded = np.expand_dims(weight_matrix, 0)
+weight_matrix_tiled = np.tile(weight_matrix_expanded, [param.batch_size*param.num_of_output_tec_maps, 1, 1])
+loss_weight_matrix = np.reshape(weight_matrix_tiled, [param.batch_size, param.num_of_output_tec_maps, param.map_height, param.map_width])
+#converting the dimension from (B, O, H, W) -> (B, H, W, O)
+loss_weight_matrix = np.transpose(loss_weight_matrix, [0, 2, 3, 1])
 
 # Start training the model
 train_loss = []
@@ -96,6 +103,9 @@ validation_loss = []
 
 with tf.Session(graph=g.graph) as sess:
     sess.run(tf.global_variables_initializer())    
+
+      
+    
     for epoch in tqdm(range(param.num_epochs)):            
         loss_train = 0
         loss_val = 0
@@ -132,7 +142,8 @@ with tf.Session(graph=g.graph) as sess:
                                                                    g.p_tec: data_period,
                                                                    g.t_tec: data_trend,
                                                                    g.output_tec: data_out,
-                                                                   g.exogenous: imf_batch})
+                                                                   g.exogenous: imf_batch,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
                     
@@ -150,7 +161,8 @@ with tf.Session(graph=g.graph) as sess:
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.p_tec: data_period,
                                                                    g.output_tec: data_out,
-                                                                   g.exogenous: imf_batch})
+                                                                   g.exogenous: imf_batch,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
                     
@@ -168,7 +180,8 @@ with tf.Session(graph=g.graph) as sess:
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.t_tec: data_trend,
                                                                    g.output_tec: data_out,
-                                                                   g.exogenous: imf_batch})
+                                                                   g.exogenous: imf_batch,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                                                                                                           
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
@@ -186,7 +199,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.output_tec: data_out,
-                                                                   g.exogenous: imf_batch})
+                                                                   g.exogenous: imf_batch,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
             
@@ -205,7 +219,8 @@ with tf.Session(graph=g.graph) as sess:
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.p_tec: data_period,
                                                                    g.t_tec: data_trend,
-                                                                   g.output_tec: data_out})
+                                                                   g.output_tec: data_out,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
                     
@@ -222,7 +237,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.p_tec: data_period,
-                                                                   g.output_tec: data_out})
+                                                                   g.output_tec: data_out,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
                     
@@ -239,7 +255,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
                                                         feed_dict={g.c_tec: data_close,
                                                                    g.t_tec: data_trend,
-                                                                   g.output_tec: data_out})
+                                                                   g.output_tec: data_out,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                                                                                                           
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
@@ -256,7 +273,8 @@ with tf.Session(graph=g.graph) as sess:
                     t1 = time.time()
                     loss_tr, _, summary = sess.run([g.loss, g.optimizer, g.merged],
                                                         feed_dict={g.c_tec: data_close,
-                                                                   g.output_tec: data_out})
+                                                                   g.output_tec: data_out,
+                                                                   g.loss_weight_matrix: loss_weight_matrix})
                     t2 = time.time()
                     print("TF for training " + str(t2-t1))
 
@@ -289,7 +307,8 @@ with tf.Session(graph=g.graph) as sess:
                                                        g.p_tec: data_period,
                                                        g.t_tec: data_trend,
                                                        g.output_tec: data_out,
-                                                       g.exogenous: imf_batch})
+                                                       g.exogenous: imf_batch,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
                                                        
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
                     # get the batch of data points
@@ -301,7 +320,8 @@ with tf.Session(graph=g.graph) as sess:
                                             feed_dict={g.c_tec: data_close,
                                                        g.p_tec: data_period,
                                                        g.output_tec: data_out,
-                                                       g.exogenous: imf_batch})
+                                                       g.exogenous: imf_batch,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
                     # get the batch of data points
@@ -313,7 +333,8 @@ with tf.Session(graph=g.graph) as sess:
                                             feed_dict={g.c_tec: data_close,
                                                        g.t_tec: data_trend,
                                                        g.output_tec: data_out,
-                                                       g.exogenous: imf_batch}) 
+                                                       g.exogenous: imf_batch,
+                                                       g.loss_weight_matrix: loss_weight_matrix}) 
                                                                                                  
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
                     # get the batch of data points
@@ -324,7 +345,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
                                                        g.output_tec: data_out,
-                                                       g.exogenous: imf_batch}) 
+                                                       g.exogenous: imf_batch,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
                                                        
             #if we don't want to use the exogenous module  
             else:
@@ -337,7 +359,8 @@ with tf.Session(graph=g.graph) as sess:
                                             feed_dict={g.c_tec: data_close,
                                                        g.p_tec: data_period,
                                                        g.t_tec: data_trend,
-                                                       g.output_tec: data_out})
+                                                       g.output_tec: data_out,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
                 
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
                     # get the batch of data points
@@ -348,7 +371,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
                                                        g.p_tec: data_period,
-                                                       g.output_tec: data_out})
+                                                       g.output_tec: data_out,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
                     # get the batch of data points
@@ -359,7 +383,8 @@ with tf.Session(graph=g.graph) as sess:
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
                                                        g.t_tec: data_trend,
-                                                       g.output_tec: data_out})                                       
+                                                       g.output_tec: data_out,
+                                                       g.loss_weight_matrix: loss_weight_matrix})                                       
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
                     # get the batch of data points
@@ -369,7 +394,8 @@ with tf.Session(graph=g.graph) as sess:
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
-                                                       g.output_tec: data_out})
+                                                       g.output_tec: data_out,
+                                                       g.loss_weight_matrix: loss_weight_matrix})
             
             loss_val += loss_v
             val_writer.add_summary(summary, te_ind + len(date_arr_test) * epoch)
