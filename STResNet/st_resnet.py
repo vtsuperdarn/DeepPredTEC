@@ -11,36 +11,35 @@ class STResNetShared(object):
     def __init__(self):
         self.graph = tf.Graph()
         with self.graph.as_default():
-            B, H, W, C, P, T, O, F, U, V, S, N, R  = param.batch_size, param.map_height, param.map_width, param.closeness_sequence_length, param.period_sequence_length, param.trend_sequence_length, param.num_of_output_tec_maps ,param.num_of_filters, param.num_of_residual_units, param.exo_values, param.gru_size, param.gru_num_layers, param.resnet_out_filters 
-            
-            
+            B, H, W, C, P, T, O, F, U, V, S, N, R  = param.batch_size, param.map_height, param.map_width, param.closeness_sequence_length, param.period_sequence_length, param.trend_sequence_length, param.num_of_output_tec_maps, param.num_of_filters, param.num_of_residual_units, param.exo_values, param.gru_size, param.gru_num_layers, param.resnet_out_filters 
+                        
             #ResNet architecture for the three modules
             #module 1: Capturing the closeness(recent)
             if(param.closeness_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.c_tec = tf.placeholder(tf.float32, shape=[None, H, W, C], name="closeness_tec_maps")
-                self.closeness_output = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=param.kernel_size, scope="closeness_input", reuse=None)
-                self.closeness_output = my.ResNet(inputs=self.closeness_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=None)
-                self.closeness_output = my.ResOutput(inputs=self.closeness_output, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=None)
                 print ("closeness input shape:", self.c_tec.shape)
-            
+                self.closeness_input = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=param.kernel_size, scope="closeness_input", reuse=None)
+                self.closeness_resnet = my.ResNet(inputs=self.closeness_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=None)
+                self.closeness_output = my.ResOutput(inputs=self.closeness_resnet, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=None)
+
             #module 2: Capturing the period(near)
             if(param.period_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.p_tec = tf.placeholder(tf.float32, shape=[None, H, W, P], name="period_tec_maps")
-                self.period_output = my.ResInput(inputs=self.p_tec, filters=F, kernel_size=param.kernel_size, scope="period_input", reuse=None)
-                self.period_output = my.ResNet(inputs=self.period_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=True)
-                self.period_output = my.ResOutput(inputs=self.period_output, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
                 print ("period input shape:", self.p_tec.shape)
-            
+                self.period_input = my.ResInput(inputs=self.p_tec, filters=F, kernel_size=param.kernel_size, scope="period_input", reuse=None)
+                self.period_resnet = my.ResNet(inputs=self.period_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=True)
+                self.period_output = my.ResOutput(inputs=self.period_resnet, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
+                
             #module 3: Capturing the trend(distant) 
             if(param.trend_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.t_tec = tf.placeholder(tf.float32, shape=[None, H, W, T], name="trend_tec_maps")
-                self.trend_output = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=param.kernel_size, scope="trend_input", reuse=None)
-                self.trend_output = my.ResNet(inputs=self.trend_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=True)
-                self.trend_output = my.ResOutput(inputs=self.trend_output, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
-                print ("trend input shape:", self.t_tec.shape)     
+                print ("trend input shape:", self.t_tec.shape) 
+                self.trend_input = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=param.kernel_size, scope="trend_input", reuse=None)
+                self.trend_resnet = my.ResNet(inputs=self.trend_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="resnet", reuse=True)
+                self.trend_output = my.ResOutput(inputs=self.trend_resnet, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
                 
             if (param.add_exogenous == True):
                 #lookback for exogenous is same as trend freq*trend length
@@ -59,21 +58,46 @@ class STResNetShared(object):
                 self.exo = tf.reshape(self.val, [-1, H, W, S])
                 
                 #concatenate the modules output with the exogenous module output
-                self.close_concat = tf.concat([self.exo, self.closeness_output], 3, name="close_concat")
-                self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
-                self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
-                
-                #last convolutional layer for getting information from exo and each of the modules
-                self.exo_close = tf.layers.conv2d(inputs=self.close_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_close") 
-                self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period") 
-                self.exo_trend = tf.layers.conv2d(inputs=self.trend_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_trend") 
+                if(param.closeness_channel == True):
+                    self.close_concat = tf.concat([self.exo, self.closeness_output], 3, name="close_concat")
+                    #last convolutional layer for getting information from exo and closeness module
+                    self.exo_close = tf.layers.conv2d(inputs=self.close_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_close") 
+                if(param.period_channel == True):
+                    self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
+                    #last convolutional layer for getting information from exo and period module
+                    self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period") 
+                if(param.trend_channel == True):
+                    self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
+                    #last convolutional layer for getting information from exo and trend module
+                    self.exo_trend = tf.layers.conv2d(inputs=self.trend_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_trend") 
                 
                 # parameter-matrix-based fusion of the outputs after combining with exo
-                self.x_res = my.Fusion(self.exo_close, self.exo_period, self.exo_trend, scope="fusion", shape=[W, W], num_outputs=O)
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period, self.exo_trend)
                 
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_trend)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close)
+
             else:
-                self.x_res = my.Fusion(self.closeness_output, self.period_output, self.trend_output, scope="fusion", shape=[W, W], num_outputs=O)
-            
+                # parameter-matrix-based fusion of the outputs after combining with exo
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output, self.trend_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.trend_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output)
+                    
             #shape of output tec map: (Batch_size, map_height, map_width, number of predictions)
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 
             print ("output shape:", self.output_tec)
@@ -102,32 +126,34 @@ class STResNetIndep(object):
             if(param.closeness_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.c_tec = tf.placeholder(tf.float32, shape=[None, H, W, C], name="closeness_tec_maps")
-                self.closeness_output = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=param.kernel_size, scope="closeness_input", reuse=None)
-                self.closeness_output = my.ResNet(inputs=self.closeness_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="closeness_resnet", reuse=None)
-                self.closeness_output = my.ResOutput(inputs=self.closeness_output, filters=R, kernel_size=param.kernel_size, scope="closeness_output", reuse=None)
                 print ("closeness input shape:", self.c_tec.shape)
+                self.closeness_input = my.ResInput(inputs=self.c_tec, filters=F, kernel_size=param.kernel_size, scope="closeness_input", reuse=None)
+                self.closeness_resnet = my.ResNet(inputs=self.closeness_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="closeness_resnet", reuse=None)
+                self.closeness_output = my.ResOutput(inputs=self.closeness_resnet, filters=R, kernel_size=param.kernel_size, scope="closeness_output", reuse=None)
+                
                 
             #module 2: Capturing the period(near)
             if(param.period_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.p_tec = tf.placeholder(tf.float32, shape=[None, H, W, P], name="period_tec_maps")
-                self.period_output = my.ResInput(inputs=self.p_tec, filters=F, kernel_size=param.kernel_size, scope="period_input", reuse=None)
-                self.period_output = my.ResNet(inputs=self.period_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="period_resnet", reuse=None)
-                self.period_output = my.ResOutput(inputs=self.period_output, filters=R, kernel_size=param.kernel_size, scope="period_output", reuse=None)
                 print ("period input shape:", self.p_tec.shape)
+                self.period_input = my.ResInput(inputs=self.p_tec, filters=F, kernel_size=param.kernel_size, scope="period_input", reuse=None)
+                self.period_resnet = my.ResNet(inputs=self.period_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="period_resnet", reuse=None)
+                self.period_output = my.ResOutput(inputs=self.period_resnet, filters=R, kernel_size=param.kernel_size, scope="period_output", reuse=None)
+                
                 
             #module 3: Capturing the trend(distant) 
             if(param.trend_channel == True):
                 #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
                 self.t_tec = tf.placeholder(tf.float32, shape=[None, H, W, T], name="trend_tec_maps")
-                self.trend_output = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=param.kernel_size, scope="trend_input", reuse=None)
-                self.trend_output = my.ResNet(inputs=self.trend_output, filters=F, kernel_size=param.kernel_size, repeats=U, scope="trend_resnet", reuse=None)
-                self.trend_output = my.ResOutput(inputs=self.trend_output, filters=R, kernel_size=param.kernel_size, scope="trend_output", reuse=None)
                 print ("trend input shape:", self.t_tec.shape)
+                self.trend_input = my.ResInput(inputs=self.t_tec, filters=F, kernel_size=param.kernel_size, scope="trend_input", reuse=None)
+                self.trend_resnet = my.ResNet(inputs=self.trend_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="trend_resnet", reuse=None)
+                self.trend_output = my.ResOutput(inputs=self.trend_resnet, filters=R, kernel_size=param.kernel_size, scope="trend_output", reuse=None)
+                
             
-            #Exogenous module    
             if (param.add_exogenous == True):
-                #TODO: lookback for exogenous is same as trend freq*trend length (have to change this)
+                #lookback for exogenous is same as trend freq*trend length
                 self.exogenous = tf.placeholder(tf.float32, shape=[None, param.trend_freq*T, V], name="exogenous")
                 print ("exogenous variable", self.exogenous.shape)
                 
@@ -143,21 +169,46 @@ class STResNetIndep(object):
                 self.exo = tf.reshape(self.val, [-1, H, W, S])
                 
                 #concatenate the modules output with the exogenous module output
-                self.close_concat = tf.concat([self.exo, self.closeness_output], 3, name="close_concat")
-                self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
-                self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
-                
-                #last convolutional layer for getting information from exo and each of the modules
-                self.exo_close = tf.layers.conv2d(inputs=self.close_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_close") 
-                self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period") 
-                self.exo_trend = tf.layers.conv2d(inputs=self.trend_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_trend") 
+                if(param.closeness_channel == True):
+                    self.close_concat = tf.concat([self.exo, self.closeness_output], 3, name="close_concat")
+                    #last convolutional layer for getting information from exo and closeness module
+                    self.exo_close = tf.layers.conv2d(inputs=self.close_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_close") 
+                if(param.period_channel == True):
+                    self.period_concat = tf.concat([self.exo, self.period_output], 3, name="period_concat")
+                    #last convolutional layer for getting information from exo and period module
+                    self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period") 
+                if(param.trend_channel == True):
+                    self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
+                    #last convolutional layer for getting information from exo and trend module
+                    self.exo_trend = tf.layers.conv2d(inputs=self.trend_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_trend") 
                 
                 # parameter-matrix-based fusion of the outputs after combining with exo
-                self.x_res = my.Fusion(self.exo_close, self.exo_period, self.exo_trend, scope="fusion", shape=[W, W], num_outputs=O)
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period, self.exo_trend)
                 
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_trend)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close)
+
             else:
-                self.x_res = my.Fusion(self.closeness_output, self.period_output, self.trend_output, scope="fusion", shape=[W, W], num_outputs=O)
-            
+                # parameter-matrix-based fusion of the outputs after combining with exo
+                if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output, self.trend_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.trend_output)
+                
+                elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output)
+                    
             #shape of output tec map: (Batch_size, map_height, map_width, number of predictions)
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 
             print ("output shape:", self.output_tec)
