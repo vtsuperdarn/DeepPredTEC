@@ -3,7 +3,6 @@ import numpy
 import dask
 import collections
 
-
 class BatchDateUtils(object):
     
     """
@@ -171,19 +170,22 @@ class TECUtils(object):
             dp_time_dict = batch_time_dict[dp_time]
             
             if(self.closeness_channel == True):
+            #    print (dp_time_dict['near_dtm'])
                 data_close.append( numpy.array( [ self.tec_data[k] for k in\
                              dp_time_dict['near_dtm'] ] ).transpose() )
             
-            if(self.period_channel == True): 
+            if(self.period_channel == True):
+            #    print (dp_time_dict['recent_dtm']) 
                 data_period.append( numpy.array( [ self.tec_data[k] for k in\
                              dp_time_dict['recent_dtm'] ] ).transpose() )
             
             if(self.trend_channel == True):
+            #    print (dp_time_dict['distant_dtm'])
                 data_trend.append( numpy.array( [ self.tec_data[k] for k in\
                              dp_time_dict['distant_dtm'] ] ).transpose() )
             
             data_out.append( numpy.array( [ self.tec_data[k] for k in\
                          dp_time_dict['future_dtm'] ] ).transpose() )
-        
+            #print (dp_time_dict['future_dtm'])
         return ( numpy.array(data_close), numpy.array(data_period), numpy.array(data_trend), numpy.array(data_out) )
 

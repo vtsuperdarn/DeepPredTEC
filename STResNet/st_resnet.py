@@ -73,30 +73,30 @@ class STResNetShared(object):
                 
                 # parameter-matrix-based fusion of the outputs after combining with exo
                 if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period, self.exo_trend)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=self.exo_period, trend_output=self.exo_trend)
                 
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=self.exo_period)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_trend)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=None, trend_output=self.exo_trend)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close)
 
             else:
                 # parameter-matrix-based fusion of the outputs after combining with exo
                 if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output, self.trend_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=self.period_output, trend_output=self.trend_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=self.period_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.trend_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=None, trend_output=self.trend_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output)
                     
             #shape of output tec map: (Batch_size, map_height, map_width, number of predictions)
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 
@@ -184,30 +184,30 @@ class STResNetIndep(object):
                 
                 # parameter-matrix-based fusion of the outputs after combining with exo
                 if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period, self.exo_trend)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=self.exo_period, trend_output=self.exo_trend)
                 
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_period)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=self.exo_period)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close, self.exo_trend)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close, period_output=None, trend_output=self.exo_trend)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.exo_close)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.exo_close)
 
             else:
                 # parameter-matrix-based fusion of the outputs after combining with exo
                 if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):                
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output, self.trend_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=self.period_output, trend_output=self.trend_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.period_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=self.period_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output, self.trend_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output, period_output=None, trend_output=self.trend_output)
                 
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
-                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, self.closeness_output)
+                    self.x_res = my.Fusion(scope="fusion", shape=[W, W], num_outputs=O, closeness_output=self.closeness_output)
                     
             #shape of output tec map: (Batch_size, map_height, map_width, number of predictions)
             self.output_tec = tf.placeholder(tf.float32, shape=[None, H, W, O], name="output_tec_map") 

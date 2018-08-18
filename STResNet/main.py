@@ -140,7 +140,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -157,7 +158,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -175,7 +177,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period, data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -210,7 +213,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -226,7 +230,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -243,7 +248,8 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period,data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
                     print("tec batch for training " + str(t2-t1))
                     
@@ -288,7 +294,8 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
@@ -299,18 +306,20 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
-                                                       g.p_tec: data_trend,
+                                                       g.t_tec: data_trend,
                                                        g.output_tec: data_out,
                                                        g.exogenous: imf_batch}) 
                                                                                                  
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period,data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
@@ -333,7 +342,8 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == True and param.trend_channel == False):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_period, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
@@ -343,7 +353,8 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == True):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
@@ -353,7 +364,8 @@ with tf.Session(graph=g.graph) as sess:
                 elif(param.closeness_channel == True and param.period_channel == False and param.trend_channel == False):
                     # get the batch of data points
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    data_close, data_out = tecObj.create_batch(curr_batch_time_dict)
+                    #here the data_period, data_trend will be empty
+                    data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     
                     loss_v, summary = sess.run([g.loss, g.merged],
                                             feed_dict={g.c_tec: data_close,
