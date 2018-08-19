@@ -37,7 +37,7 @@ class STResNetShared(object):
                     self.period_output = my.ResOutput(inputs=self.period_resnet, filters=R, kernel_size=param.kernel_size, scope="resnet_output", reuse=True)
             
             #running closeness on third gpu
-            with tf.device('/device:GPU:2'):    
+            with tf.device('/device:GPU:0'):    
                 #module 3: Capturing the trend(distant) 
                 if(param.trend_channel == True):
                     #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
@@ -76,7 +76,7 @@ class STResNetShared(object):
                         #last convolutional layer for getting information from exo and period module
                         self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period")
                         
-                with tf.device('/device:GPU:2'):         
+                with tf.device('/device:GPU:0'):         
                     if(param.trend_channel == True):
                         self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
                         #last convolutional layer for getting information from exo and trend module
@@ -160,7 +160,7 @@ class STResNetIndep(object):
                     self.period_resnet = my.ResNet(inputs=self.period_input, filters=F, kernel_size=param.kernel_size, repeats=U, scope="period_resnet", reuse=None)
                     self.period_output = my.ResOutput(inputs=self.period_resnet, filters=R, kernel_size=param.kernel_size, scope="period_output", reuse=None)
                     
-            with tf.device('/device:GPU:2'):    
+            with tf.device('/device:GPU:0'):    
                 #module 3: Capturing the trend(distant) 
                 if(param.trend_channel == True):
                     #shape of a tec map: (Batch_size, map_height, map_width, depth(num of history tec maps))
@@ -200,7 +200,7 @@ class STResNetIndep(object):
                         #last convolutional layer for getting information from exo and period module
                         self.exo_period = tf.layers.conv2d(inputs=self.period_concat, filters=O, kernel_size=param.kernel_size, strides=(1,1), padding="SAME", name="exo_period") 
                 
-                with tf.device('/device:GPU:2'):
+                with tf.device('/device:GPU:0'):
                     if(param.trend_channel == True):
                         self.trend_concat = tf.concat([self.exo, self.trend_output], 3, name="trend_concat")
                         #last convolutional layer for getting information from exo and trend module

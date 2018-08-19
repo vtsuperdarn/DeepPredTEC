@@ -135,7 +135,7 @@ def Fusion(scope, shape, num_outputs, closeness_output=None, period_output=None,
                     output = tf.matmul(output, Wp)
                     period_output = tf.reshape(output, [-1, period_output.shape[1], period_output.shape[2]])
             
-            with tf.device('/device:GPU:2'):    
+            with tf.device('/device:GPU:0'):    
                 if(trend_output != None):
                     output = tf.reshape(trend_output, [-1, trend_output.shape[2]])
                     output = tf.matmul(output, Wt)
@@ -169,7 +169,7 @@ def Fusion(scope, shape, num_outputs, closeness_output=None, period_output=None,
                     poutput = tf.matmul(poutput, Wp)
                     period_output = tf.reshape(poutput, [-1, period_output.shape[1], period_output.shape[2], period_output.shape[3]])
             
-            with tf.device('/device:GPU:2'):
+            with tf.device('/device:GPU:0'):
                 if(trend_output != None):
                     trend_output = tf.transpose(trend_output, [0, 3, 1, 2])
                     toutput = tf.reshape(trend_output, [-1, trend_output.shape[3]])
