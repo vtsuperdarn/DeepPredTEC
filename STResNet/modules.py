@@ -122,21 +122,25 @@ def Fusion(scope, shape, num_outputs, closeness_output=None, period_output=None,
             Wt = tf.get_variable("trend_matrix", dtype=tf.float32, shape=shape, initializer=tf.contrib.layers.xavier_initializer(), trainable=True)
         
         if(num_outputs == 1):
-            if(closeness_output != None):            
-                output = tf.reshape(closeness_output, [-1, closeness_output.shape[2]])
-                output = tf.matmul(output, Wc)
-                closeness_output = tf.reshape(output, [-1, closeness_output.shape[1], closeness_output.shape[2]])
             
-            if(period_output != None):
-                output = tf.reshape(period_output, [-1, period_output.shape[2]])
-                output = tf.matmul(output, Wp)
-                period_output = tf.reshape(output, [-1, period_output.shape[1], period_output.shape[2]])
+            with tf.device('/device:GPU:0'):
+                if(closeness_output != None):            
+                    output = tf.reshape(closeness_output, [-1, closeness_output.shape[2]])
+                    output = tf.matmul(output, Wc)
+                    closeness_output = tf.reshape(output, [-1, closeness_output.shape[1], closeness_output.shape[2]])
             
-            if(trend_output != None):
-                output = tf.reshape(trend_output, [-1, trend_output.shape[2]])
-                output = tf.matmul(output, Wt)
-                trend_output = tf.reshape(output, [-1, trend_output.shape[1], trend_output.shape[2]])
-           
+            with tf.device('/device:GPU:1'):    
+                if(period_output != None):
+                    output = tf.reshape(period_output, [-1, period_output.shape[2]])
+                    output = tf.matmul(output, Wp)
+                    period_output = tf.reshape(output, [-1, period_output.shape[1], period_output.shape[2]])
+            
+            with tf.device('/device:GPU:2'):    
+                if(trend_output != None):
+                    output = tf.reshape(trend_output, [-1, trend_output.shape[2]])
+                    output = tf.matmul(output, Wt)
+                    trend_output = tf.reshape(output, [-1, trend_output.shape[1], trend_output.shape[2]])
+               
             if(closeness_output != None and period_output != None and trend_output != None):
                 outputs = tf.add(tf.add(closeness_output, period_output), trend_output)
             elif(closeness_output != None and period_output != None and trend_output == None):
@@ -151,24 +155,27 @@ def Fusion(scope, shape, num_outputs, closeness_output=None, period_output=None,
     
         #if the number of outputs is greater than 1 then the matrix transformation operations are different
         else:
-            if(closeness_output != None):
-                closeness_output = tf.transpose(closeness_output, [0, 3, 1, 2])
-                coutput = tf.reshape(closeness_output, [-1, closeness_output.shape[3]])
-                coutput = tf.matmul(coutput, Wc)
-                closeness_output = tf.reshape(coutput, [-1, closeness_output.shape[1], closeness_output.shape[2], closeness_output.shape[3]])
+            with tf.device('/device:GPU:0'):
+                if(closeness_output != None):
+                    closeness_output = tf.transpose(closeness_output, [0, 3, 1, 2])
+                    coutput = tf.reshape(closeness_output, [-1, closeness_output.shape[3]])
+                    coutput = tf.matmul(coutput, Wc)
+                    closeness_output = tf.reshape(coutput, [-1, closeness_output.shape[1], closeness_output.shape[2], closeness_output.shape[3]])
             
-            if(period_output != None):
-                period_output = tf.transpose(period_output, [0, 3, 1, 2])
-                poutput = tf.reshape(period_output, [-1, period_output.shape[3]])
-                poutput = tf.matmul(poutput, Wp)
-                period_output = tf.reshape(poutput, [-1, period_output.shape[1], period_output.shape[2], period_output.shape[3]])
+            with tf.device('/device:GPU:1'):
+                if(period_output != None):
+                    period_output = tf.transpose(period_output, [0, 3, 1, 2])
+                    poutput = tf.reshape(period_output, [-1, period_output.shape[3]])
+                    poutput = tf.matmul(poutput, Wp)
+                    period_output = tf.reshape(poutput, [-1, period_output.shape[1], period_output.shape[2], period_output.shape[3]])
             
-            if(trend_output != None):
-                trend_output = tf.transpose(trend_output, [0, 3, 1, 2])
-                toutput = tf.reshape(trend_output, [-1, trend_output.shape[3]])
-                toutput = tf.matmul(toutput, Wt)
-                trend_output = tf.reshape(toutput, [-1, trend_output.shape[1], trend_output.shape[2], trend_output.shape[3]])
-           
+            with tf.device('/device:GPU:2'):
+                if(trend_output != None):
+                    trend_output = tf.transpose(trend_output, [0, 3, 1, 2])
+                    toutput = tf.reshape(trend_output, [-1, trend_output.shape[3]])
+                    toutput = tf.matmul(toutput, Wt)
+                    trend_output = tf.reshape(toutput, [-1, trend_output.shape[1], trend_output.shape[2], trend_output.shape[3]])
+               
             if(closeness_output != None and period_output != None and trend_output != None):
                 outputs = tf.add(tf.add(closeness_output, period_output), trend_output)
             elif(closeness_output != None and period_output != None and trend_output == None):

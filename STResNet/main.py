@@ -101,10 +101,8 @@ loss_weight_matrix = np.transpose(loss_weight_matrix, [0, 2, 3, 1])
 train_loss = []
 validation_loss = []
 
-with tf.Session(graph=g.graph) as sess:
+with tf.Session(graph=g.graph, config=tf.ConfigProto(log_device_placement=True)) as sess:
     sess.run(tf.global_variables_initializer())    
-
-      
     
     for epoch in tqdm(range(param.num_epochs)):            
         loss_train = 0
