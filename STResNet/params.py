@@ -23,7 +23,7 @@ class Params(object):
     # train to test ratio
     train_test_ratio = 0.8
 
-    independent_channels = False     #true if channels are independent, false if channels have shared parameter
+    independent_channels = True     #true if channels are independent, false if channels have shared parameter
         
     closeness_channel = True        #toggle for on/off
     closeness_freq = 1              #no of jumps for sampling. If 1 at resolution of 5 mins tec maps is taken, 2 then 10 mins resolution     
@@ -33,7 +33,7 @@ class Params(object):
     period_freq = 12                #no of jumps for sampling. If 12 at resolution of 1 hour tec maps is taken, 24 then 2 hours resolution 
     period_sequence_length = 24     #no. of tec maps for period. if 24 then past one day tec maps
     
-    trend_channel = True            #toggle for on/off
+    trend_channel = False           #toggle for on/off
     trend_freq = 36                 #no of jumps for sampling. If 36 at resolution of 3 hours tec maps is taken, 72 then 6 hours resolution 
     trend_sequence_length =  8      #no. of tec maps for trend. if 8 then past one day tec maps     
     
