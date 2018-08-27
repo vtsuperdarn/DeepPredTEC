@@ -46,7 +46,7 @@ start_date = param.start_date
 end_date = param.end_date
 
 # get all corresponding dates for batches
-batchObj = BatchDateUtils(start_date, end_date, param.batch_size, param.tec_resolution,\
+batchObj = BatchDateUtils(start_date, end_date, param.batch_size, param.tec_resolution, param.data_point_freq,\
                          param.closeness_freq, closeness_size, param.period_freq, period_size,\
                          param.trend_freq, trend_size, param.num_of_output_tec_maps, param.output_freq,\
                          param.closeness_channel, param.period_channel, param.trend_channel)
@@ -101,8 +101,10 @@ loss_weight_matrix = np.transpose(loss_weight_matrix, [0, 2, 3, 1])
 train_loss = []
 validation_loss = []
 
-with tf.Session(graph=g.graph, config=tf.ConfigProto(log_device_placement=True)) as sess:
+with tf.Session(graph=g.graph) as sess:
     sess.run(tf.global_variables_initializer())    
+
+      
     
     for epoch in tqdm(range(param.num_epochs)):            
         loss_train = 0
@@ -114,7 +116,7 @@ with tf.Session(graph=g.graph, config=tf.ConfigProto(log_device_placement=True))
         
         # TRAINING
         for tr_ind, current_datetime in tqdm(enumerate(date_arr_train)):
-            #print("Training date-->" + current_datetime.strftime("%Y%m%d-%H%M"))
+            print("Training date -->" + current_datetime.strftime("%Y%m%d-%H%M"))
             
             #if we need to use the exogenous module
             if (param.add_exogenous == True):
@@ -149,6 +151,7 @@ with tf.Session(graph=g.graph, config=tf.ConfigProto(log_device_placement=True))
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
+                    print ("curr_batch_time_dict:", curr_batch_time_dict)
                     #here the data_trend will be empty
                     data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()

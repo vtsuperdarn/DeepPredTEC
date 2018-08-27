@@ -59,7 +59,7 @@ path = param.saved_model_path+"_values"
 omnObj = OmnData(start_date_omni, end_date_omni, omn_dbdir, omn_db_name, omn_table_name, omn_train, param.imf_normalize, path)
 
 # get all corresponding dates for batches
-batchObj = BatchDateUtils(start_date, end_date, param.batch_size, param.tec_resolution,\
+batchObj = BatchDateUtils(start_date, end_date, param.batch_size, param.tec_resolution, param.data_point_freq,\
                          param.closeness_freq, closeness_size, param.period_freq, period_size,\
                          param.trend_freq, trend_size, param.num_of_output_tec_maps, param.output_freq,\
                          param.closeness_channel, param.period_channel, param.trend_channel)

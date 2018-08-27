@@ -12,7 +12,7 @@ class BatchDateUtils(object):
     and store them in a dict
     """
     
-    def __init__(self, start_date, end_date, batch_size, resolution,\
+    def __init__(self, start_date, end_date, batch_size, resolution, data_point_freq,\
                 closeness_freq, closeness_size, period_freq, period_size,\
                 trend_freq, trend_size, num_outputs, output_freq,\
                 closeness_channel, period_channel, trend_channel):
@@ -23,6 +23,7 @@ class BatchDateUtils(object):
         self.end_date = end_date
         self.batch_size = batch_size
         self.resolution = resolution
+        self.data_point_freq = data_point_freq
         
         self.closeness_channel = closeness_channel
         self.closeness_freq = closeness_freq
@@ -50,7 +51,8 @@ class BatchDateUtils(object):
         batch_curr_date = self.start_date
         while batch_curr_date <= self.end_date:
             batch_dict[batch_curr_date] = self.get_data_point_arrays(batch_curr_date)
-            batch_curr_date += datetime.timedelta(minutes=self.resolution*self.batch_size)
+            batch_curr_date += datetime.timedelta(minutes=self.resolution*self.data_point_freq*self.batch_size)
+            print ("batch-curr-date:", batch_curr_date)
         return batch_dict
 
     def get_data_point_arrays(self, curr_time):
@@ -59,9 +61,9 @@ class BatchDateUtils(object):
         channels
         """
         # loop through all the data points in the batch and construct arrays
-        dtms = [curr_time + datetime.timedelta(minutes=i*self.resolution)\
+        dtms = [curr_time + datetime.timedelta(minutes=i*self.resolution*self.data_point_freq)\
                 for i in range(self.batch_size)]
-        
+        print ("datetimes:", dtms)
         dp_dict = collections.OrderedDict()
         
         for dtm in dtms :
@@ -188,4 +190,3 @@ class TECUtils(object):
                          dp_time_dict['future_dtm'] ] ).transpose() )
             #print (dp_time_dict['future_dtm'])
         return ( numpy.array(data_close), numpy.array(data_period), numpy.array(data_trend), numpy.array(data_out) )
-

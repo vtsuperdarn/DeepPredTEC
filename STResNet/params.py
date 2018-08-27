@@ -8,15 +8,17 @@ class Params(object):
     batch_size = 64                 #defines the batch size to load in the tec data points
     map_height = 75                 # no of latitudes
     map_width = 73                  #number of longitudes
+    
     tec_resolution = 5              #default value in the dateset
+    data_point_freq = 2             #no of jumps for creating datapoints. If 1 at 5 mins resolution tec maps, 2 then 10 mins resolution
     
     # TEC data loading location and times
-    file_dir = "../data/tec_map/filled/"
-    start_date = datetime.datetime(2011, 1, 11)
-    end_date = datetime.datetime(2014, 1, 1)
+    file_dir = "../../data/tec_map/filled/"
+    start_date = datetime.datetime(2015, 3, 17)
+    end_date = datetime.datetime(2015, 3, 18)
     
     # OMNI IMF data
-    omn_dbdir = "../data/sqlite3/"
+    omn_dbdir = "../../data/sqlite3/"
     omn_db_name = "omni_imf_res_5.sqlite"
     omn_table_name = "IMF"
     
@@ -38,11 +40,11 @@ class Params(object):
     trend_sequence_length =  8      #no. of tec maps for trend. if 8 then past one day tec maps     
     
     output_freq = 2                 #no of jumps for sampling. If 1 at resolution of 5 mins tec maps is taken, 2 then 10 mins resolution 
-    num_of_output_tec_maps = 12     #number of tec maps to be predicted
-    resnet_out_filters = 12         #make this same as num_of_output_tec_maps
+    num_of_output_tec_maps = 24     #number of tec maps to be predicted
+    resnet_out_filters = 24         #make this same as num_of_output_tec_maps
     
     num_of_filters = 12             #no. of filters in convolution layer    
-    num_of_residual_units = 100      #This defines the resnet depth
+    num_of_residual_units = 100     #This defines the resnet depth
     kernel_size = (5, 5)            #kernel size for convolution layer
     
     exo_values = 4                  #by, bz, vx, np
@@ -54,7 +56,7 @@ class Params(object):
     #TODO initialize this
     #look_back = 
     
-    load_window = 10                 #for safety so that enough data is available to create the data points
+    load_window = 3                 #for safety so that enough data is available to create the data points
     
     epsilon = 1e-7
     beta1 = 0.9
@@ -64,8 +66,8 @@ class Params(object):
     
     num_epochs = 100                  #number of epochs for training
 
-    loss_weight_matrix = "w0_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
-    #loss_weight_matrix = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
+    #loss_weight_matrix = "w0_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
+    loss_weight_matrix = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
     
     model_path = './model_batch'+str(batch_size)+'_epoch'+str(num_epochs)+'_resnet'+str(num_of_residual_units) +\
                  '_nresfltr'+str(resnet_out_filters) + '_nfltr'+str(num_of_filters) +\
@@ -77,8 +79,8 @@ class Params(object):
                  '_exo' + str(add_exogenous)[0] + '_nrm' + str(imf_normalize)[0] + \
                  '_' + loss_weight_matrix[:2] + '_yr_11_13'
     
-    saved_model = '/current' # for loading the final saved model
-    #saved_model = '/epoch_0' #'/epoch_X', for loading the model saved at X epoch
+    #saved_model = '/current' # for loading the final saved model
+    saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
     
     #saved_model_path = "" #enter the model name for getting the prediction, eg. "model_batch8_epoch1_resnet10_nresfltr12_nfltr12_of1_otec12_cf1_csl12_pf12_psl24_tf36_tsl8_gs32_ks55_exoT_nrmT_1.25040221214"
     #saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
