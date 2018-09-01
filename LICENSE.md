@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2017 SuperDARN Group, Virginia Tech
+Copyright (c) 2018 SuperDARN Group, Virginia Tech
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
