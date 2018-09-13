@@ -13,12 +13,12 @@ class Params(object):
     data_point_freq = 2             #no of jumps for creating datapoints. If 1 at 5 mins resolution tec maps, 2 then 10 mins resolution
     
     # TEC data loading location and times
-    file_dir = "../../data/tec_map/filled/"
-    start_date = datetime.datetime(2015, 3, 17)
-    end_date = datetime.datetime(2015, 3, 18)
+    file_dir = "../data/tec_map/filled/"
+    start_date = datetime.datetime(2015, 3, 1)
+    end_date = datetime.datetime(2015, 3, 3)
     
     # OMNI IMF data
-    omn_dbdir = "../../data/sqlite3/"
+    omn_dbdir = "../data/sqlite3/"
     omn_db_name = "omni_imf_res_5.sqlite"
     omn_table_name = "IMF"
     
@@ -85,7 +85,8 @@ class Params(object):
     #saved_model_path = "" #enter the model name for getting the prediction, eg. "model_batch8_epoch1_resnet10_nresfltr12_nfltr12_of1_otec12_cf1_csl12_pf12_psl24_tf36_tsl8_gs32_ks55_exoT_nrmT_1.25040221214"
     #saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_323.49480175971985"
-    saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    saved_model_path = "../TrainedModels/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
     
     logdir = "train"
     
