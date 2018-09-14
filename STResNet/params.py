@@ -82,13 +82,15 @@ class Params(object):
                  '_' + weight_file[:2] + '_yr_11_13'
     
     #saved_model = '/current' # for loading the final saved model
-    saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
+    #saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
+    saved_model = '/epoch_33' #'/epoch_X', for loading the model saved at X epoch
     
     #saved_model_path = "" #enter the model name for getting the prediction, eg. "model_batch8_epoch1_resnet10_nresfltr12_nfltr12_of1_otec12_cf1_csl12_pf12_psl24_tf36_tsl8_gs32_ks55_exoT_nrmT_1.25040221214"
     #saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_323.49480175971985"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-    saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    #saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464"
     
     logdir = "train"
     

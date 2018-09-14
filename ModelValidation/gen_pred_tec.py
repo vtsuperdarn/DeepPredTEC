@@ -41,6 +41,12 @@ ks = [x.replace("ks", "") for x in param_values if x.startswith("ks")][0]
 param.kernel_size = (int(ks[0]), int(ks[1]))
 exo = [x.replace("exo", "") for x in param_values if x.startswith("exo")][0]
 nrm = [x.replace("nrm", "") for x in param_values if x.startswith("nrm")][0]
+weight_num = [x for x in param_values if x.startswith("w")]
+if weight_num:
+    param.weight_file = weight_num[0] + "_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
+    param.loss_weight_matrix = param.weight_dir + param.weight_file
+else:
+    pass
 if exo == "T":
     param.add_exogenous = True
 else:
@@ -207,7 +213,7 @@ with tf.Session(graph=g.graph) as sess:
         j = 0
         for dtm in curr_batch_time_dict.keys():
             tec_pred = dtm.strftime("%Y%m%d.%H%M") + "_pred.npy"
-            tec_true = dtm.strftime("%Y%m%d.%H%M") + "_true.npy"
+            #tec_true = dtm.strftime("%Y%m%d.%H%M") + "_true.npy"
             tec_close = dtm.strftime("%Y%m%d.%H%M") + "_close.npy"
             tec_period = dtm.strftime("%Y%m%d.%H%M") + "_period.npy"
             tec_trend = dtm.strftime("%Y%m%d.%H%M") + "_trend.npy"
