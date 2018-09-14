@@ -63,7 +63,7 @@ class BatchDateUtils(object):
         # loop through all the data points in the batch and construct arrays
         dtms = [curr_time + datetime.timedelta(minutes=i*self.resolution*self.data_point_freq)\
                 for i in range(self.batch_size)]
-        print ("datetimes:", dtms)
+        #print ("datetimes:", dtms)
         dp_dict = collections.OrderedDict()
         
         for dtm in dtms :

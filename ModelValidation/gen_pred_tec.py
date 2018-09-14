@@ -70,7 +70,8 @@ end_date_omni =  param.end_date + dt.timedelta(days=param.load_window)
 # Copy the trained model to current folder
 if not os.path.exists(param.saved_model_path):
     print("Please copy the model to ./model_results/")
-    return
+    print("Exitting... ")
+    exit()
 
 path = param.saved_model_path+"_values"
 
@@ -100,7 +101,7 @@ loss_weight_matrix = np.reshape(weight_matrix_tiled, [param.batch_size, param.nu
 loss_weight_matrix = np.transpose(loss_weight_matrix, [0, 2, 3, 1])
 
 #creating directory inside the model_path_values folder for those datetime variables for which prediction is made
-path_pred = path+'/'+"predicted_tec"
+path_pred = path+'/'+"predicted_tec/"
 if not os.path.exists(path_pred):
     os.makedirs(path_pred)
 
@@ -225,4 +226,4 @@ with tf.Session(graph=g.graph) as sess:
         
     loss_values = np.array(loss_values)
     print ('Saving loss values in the .npy file ...')    
-    np.save(path_pred+'/prediction_loss.npy', loss_values)        
+    np.save(path_pred+'prediction_loss.npy', loss_values)        

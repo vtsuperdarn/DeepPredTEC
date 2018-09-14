@@ -66,9 +66,9 @@ class Params(object):
     
     num_epochs = 100                  #number of epochs for training
 
-    #loss_weight_matrix = "w0_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
+    weight_file = "w0_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
+    #weight_file = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
     weight_dir = "../WeightMatrix/"
-    weight_file = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
     loss_weight_matrix = weight_dir + weight_file
     
     model_path = '../TrainedModels/model_batch'+str(batch_size)+'_epoch'+str(num_epochs)+'_resnet'+str(num_of_residual_units) +\
