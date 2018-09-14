@@ -68,8 +68,8 @@ class Params(object):
 
     #loss_weight_matrix = "w0_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
     weight_dir = "../WeightMatrix/"
-    loss_weight_matrix_file = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
-    loss_weight_matrix = weight_dir + loss_weight_matrix
+    weight_file = "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
+    loss_weight_matrix = weight_dir + weight_file
     
     model_path = '../TrainedModels/model_batch'+str(batch_size)+'_epoch'+str(num_epochs)+'_resnet'+str(num_of_residual_units) +\
                  '_nresfltr'+str(resnet_out_filters) + '_nfltr'+str(num_of_filters) +\
@@ -79,7 +79,7 @@ class Params(object):
                  '_tf' + str(trend_freq) + '_tsl' + str(trend_sequence_length) +\
                  '_gs' + str(gru_size) + '_ks' + "".join([str(x) for x in kernel_size]) +\
                  '_exo' + str(add_exogenous)[0] + '_nrm' + str(imf_normalize)[0] + \
-                 '_' + loss_weight_matrix_file[:2] + '_yr_11_13'
+                 '_' + weight_file[:2] + '_yr_11_13'
     
     #saved_model = '/current' # for loading the final saved model
     saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
