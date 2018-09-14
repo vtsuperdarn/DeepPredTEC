@@ -69,8 +69,8 @@ end_date_omni =  param.end_date + dt.timedelta(days=param.load_window)
 
 # Copy the trained model to current folder
 if not os.path.exists(param.saved_model_path):
-    shutil.copytree(param.model_path, "./model_results/")
-    shutil.copytree(param.model_path+"_values", "./model_results/")
+    print("Please copy the model to ./model_results/")
+    return
 
 path = param.saved_model_path+"_values"
 
