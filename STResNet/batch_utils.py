@@ -52,7 +52,7 @@ class BatchDateUtils(object):
         while batch_curr_date <= self.end_date:
             batch_dict[batch_curr_date] = self.get_data_point_arrays(batch_curr_date)
             batch_curr_date += datetime.timedelta(minutes=self.resolution*self.data_point_freq*self.batch_size)
-            print ("batch-curr-date:", batch_curr_date)
+            #print ("batch-curr-date:", batch_curr_date)
         return batch_dict
 
     def get_data_point_arrays(self, curr_time):
