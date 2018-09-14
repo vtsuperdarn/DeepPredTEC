@@ -70,7 +70,7 @@ class Params(object):
     weight_dir = "../WeightMatrix/"
     loss_weight_matrix = weight_dir + "w1_mlat_45-70_2.0_mlat_80-90_2.0_mlon_None.npy"
     
-    model_path = './model_batch'+str(batch_size)+'_epoch'+str(num_epochs)+'_resnet'+str(num_of_residual_units) +\
+    model_path = '../TrainedModels/model_batch'+str(batch_size)+'_epoch'+str(num_epochs)+'_resnet'+str(num_of_residual_units) +\
                  '_nresfltr'+str(resnet_out_filters) + '_nfltr'+str(num_of_filters) +\
                  '_of' + str(output_freq) + '_otec' + str(num_of_output_tec_maps) +\
                  '_cf' + str(closeness_freq) + '_csl' + str(closeness_sequence_length) +\
@@ -87,7 +87,7 @@ class Params(object):
     #saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_323.49480175971985"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-    saved_model_path = "../TrainedModels/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
     
     logdir = "train"
     
