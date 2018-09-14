@@ -15,6 +15,7 @@ import sqlite3
 from tqdm import tqdm
 import datetime as dt
 import os
+import shutil
 import numpy
 import time
 from omn_utils import OmnData
@@ -65,6 +66,12 @@ trend_size = param.trend_sequence_length
 omn_train=False
 start_date_omni =  param.start_date - dt.timedelta(days=param.load_window)
 end_date_omni =  param.end_date + dt.timedelta(days=param.load_window)
+
+# Copy the trained model to current folder
+if not os.path.exists(param.saved_model_path):
+    shutil.copytree(param.model_path, "./model_results/")
+    shutil.copytree(param.model_path+"_values", "./model_results/")
+
 path = param.saved_model_path+"_values"
 
 #getting the omni object
