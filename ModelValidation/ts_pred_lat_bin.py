@@ -12,10 +12,10 @@ class ModValTSLat(object):
     a timeseries plot of average TEC value binned by latitude,
     to test the accuracy of the model.
     """
-    def __init__(self, baseDir, modelName, timeRange=None,\
-             latBinSize=10, mlonRange=None):
+    def __init__(self, baseModelDir, modelName, trueTecBaseDir,\
+             timeRange=None, latBinSize=10, mlonRange=None):
         """
-        baseDir : parent dir where all models are stored
+        baseModelDir : parent dir where all models are stored
         modelName : name of the model being tested
         timeRange : time range of the plot. If set to None
                     the time range is determined by the 
@@ -26,7 +26,8 @@ class ModValTSLat(object):
         mlonRange : range of mlons over which TEC values are averaged
                     If set to None all MLONs are used.
         """
-        self.modelDir = baseDir + modelName + "/" + "predicted_tec/"
+        self.modelDir = baseModelDir + modelName + "/" + "predicted_tec/"
+        self.trueTecBaseDir = trueTecBaseDir
         self.timeRange = timeRange
         # Make sure the start time and end time minute are multiple of 0 or 5
         if self.timeRange is not None:
@@ -36,7 +37,8 @@ class ModValTSLat(object):
                 "End Time minute should end with 0 or 5."
         self.latBinSize = latBinSize
         self.mlonRange = mlonRange
-        self.tecDataDict = {}
+        self.tecModelDict = {}
+        self.tecTrueDict = {}
 
     def read_data(self, refInpDir="/sd-data/med_filt_tec/",\
                     refFileDate=datetime.datetime(2015,1,1), fType="pred"):
@@ -71,8 +73,12 @@ class ModValTSLat(object):
             fTime = cfn.split(".")[1].split("_")[0]
             cd = datetime.datetime.strptime(fDate +\
                                 "-" + fTime, "%Y%m%d-%H%M")
-            self.load_npy_file(cd, _fn)
-        self.tecDataDict = dask.delayed(tecDataDict).compute()
+            # get the fName for actual data dir
+            tfn = self.trueTecBaseDir + fDate + "/" + fDate +\
+                         "." + fTime + ".npy"
+            # Load the actual data
+            self.load_npy_file(cd, _fn, "pred")
+            self.load_npy_file(cd, tfn, "true")
         # read a dummy tec file into pandas DF to convert the numpy
         # files into a DF with appropriate columns
         # Read the median filtered TEC data
@@ -93,26 +99,41 @@ class ModValTSLat(object):
             (dfRef["Mlon"] <= mlon_east) ].reset_index(drop=True)
         # pivot dfRef to get the cols
         dfRef = dfRef.pivot(index="Mlat", columns="Mlon",\
-                 values="med_tec").as_matrix()
-        dfList = []
-        for _tdk in self.tecDataDict.keys():
-            dfRef[dfRef.columns] = self.tecDataDict[_tdk]
+                 values="med_tec")
+        # Predicted DF
+        predDFList = []
+        for _tdk in self.tecModelDict.keys():
+            dfRef[dfRef.columns] = self.tecModelDict[_tdk]
             # unpivot the DF
             ndf = dfRef.unstack().reset_index(name='med_tec')
             # add a date col
             ndf["date"] = _tdk
-            dfList.append( ndf )
+            predDFList.append( ndf )
         # append the DFs
-        return pandas.concat(dfList).sort_values(\
+        predTECDF = pandas.concat(predDFList).sort_values(\
                         "date").reset_index(drop=True)
+        trueDFList = []
+        for _tdk in self.tecTrueDict.keys():
+            dfRef[dfRef.columns] = self.tecTrueDict[_tdk]
+            # unpivot the DF
+            ndf = dfRef.unstack().reset_index(name='med_tec')
+            # add a date col
+            ndf["date"] = _tdk
+            trueDFList.append( ndf )
+        # append the DFs
+        trueTECDF = pandas.concat(trueDFList).sort_values(\
+                        "date").reset_index(drop=True)
+        return (predTECDF, trueTECDF)
 
-    def generate_ts_plots(self, downCastDF=True,remove_neg_tec_rows=True):
+
+    def generate_ts_plots(self, figName, downCastDF=True,\
+             remove_neg_tec_rows=True):
         """
         Generate plots based on the input conditions
         (1) remove_neg_tec_rows : remove all the rows where tec 
                                   values are negative!
         """
-        predTECDF = self.read_data()
+        (predTECDF, trueTECDF) = self.read_data()
         # Downcast Mlon, Mlat and med_tec to float16's, this way
         # we reduce the space occupied by the DF by almost 1/2
         predTECDF["Mlon"] = predTECDF["Mlon"].astype(numpy.float16)
@@ -135,28 +156,51 @@ class ModValTSLat(object):
         colList = predTECDF.columns
         predTECDF = pandas.concat( [ predTECDF, \
                             pandas.cut( predTECDF["Mlat"], \
-                                       bins=self.latBins ) ], axis=1 )
+                                       bins=latBins ) ], axis=1 )
         predTECDF.columns = list(colList) + ["mlat_bins"]
         # Finally get to the plotting section
         # group by mlat bins and date to develop the plot
         mBinDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ] ].groupby(\
                     ["mlat_bins", "date"] ).median().reset_index()
-
-        
-            
-    @dask.delayed
-    def load_npy_file(currDate, fName):
+        # set seaborn styling
+        sns.set_style("whitegrid")
+        sns.set_context("poster")
+        f = plt.figure(figsize=(12, 8))
+        ax = f.add_subplot(1,1,1)
+        # Load an example dataset with long-form data
+        # # Plot the responses for different events and regions
+        sns.lineplot(x="date", y="med_tec",
+                     hue="mlat_bins",
+                     data=grpDF,ax=ax)
+        ax.get_xaxis().set_major_formatter(DateFormatter('%m-%d'))
+        ax.set_ylabel("TEC", fontsize=16)
+        ax.set_xlabel("DATE (UT)", fontsize=16)
+        # Put the legend out of the figure
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.tick_params(labelsize=16)
+        fig.savefig(figName,bbox_inches='tight')
+    
+    # @dask.delayed
+    def load_npy_file(self, currDate, fName, fType):
         """
         Load a correponding TEC file into the dict
         """
-        self.tecDataDict[currDate] = dask.delayed(numpy.load)(fName)
-
+        if fType == "pred":
+            self.tecModelDict[currDate] = numpy.load(fName)
+        else:
+            self.tecTrueDict[currDate] = numpy.load(fName)
 
 if __name__ == "__main__":
 
     modelName = "model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464_values"
-    baseDir = "/sd-data/DeepPredTEC/ModelValidation/"
+    baseModelDir = "/sd-data/DeepPredTEC/ModelValidation/"
+    trueTecBaseDir = "/sd-data/DeepPredTEC/data/tec_map/filled/"
     timeRange = [ datetime.datetime(2015,3,5), datetime.datetime(2015,3,10) ]
-    tsObj = ModValTSLat(baseDir, modelName, timeRange=timeRange)
-    tsObj.read_data()
+    tsObj = ModValTSLat(baseModelDir, modelName,\
+             trueTecBaseDir, timeRange=timeRange)
+    figName = "/home/bharat/Desktop/marc-examples/t/t2.pdf"
+    tsObj.generate_ts_plots(figName)
+
+
+
 
