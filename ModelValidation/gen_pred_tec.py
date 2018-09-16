@@ -215,15 +215,15 @@ with tf.Session(graph=g.graph) as sess:
         loss_values.append(loss_v)    
         print("val_loss: {:.3f}".format(loss_v))        
         
-        #saving the predictions into seperate directories that are already created
-        for j, dtm in curr_batch_time_dict.keys():
-            tec_pred = dtm.strftime("%Y%m%d.%H%M") + "_pred.npy"
-            #tec_true = dtm.strftime("%Y%m%d.%H%M") + "_true.npy"
-            tec_close = dtm.strftime("%Y%m%d.%H%M") + "_close.npy"
-            tec_period = dtm.strftime("%Y%m%d.%H%M") + "_period.npy"
-            tec_trend = dtm.strftime("%Y%m%d.%H%M") + "_trend.npy"
-            np.save(path_pred+tec_pred, pred[j])
-            #np.save(path_pred+tec_true, truth[j])
+        #saving the predictions, one file for one TEC map
+        for j, point_dtm_key in curr_batch_time_dict.keys():
+            for k, dtm in enumerate(curr_batch_time_dict[dtm_key]["future_dtm"]):
+                tec_pred = dtm.strftime("%Y%m%d.%H%M") + "_pred.npy"
+                np.save(path_pred+tec_pred, pred[j, :, :, k])
+
+            tec_close = point_dtm_key.strftime("%Y%m%d.%H%M") + "_close.npy"
+            tec_period = point_dtm_key.strftime("%Y%m%d.%H%M") + "_period.npy"
+            tec_trend = point_dtm_key.strftime("%Y%m%d.%H%M") + "_trend.npy"
             if(param.closeness_channel == True):
                 np.save(path_pred+tec_close, closeness[j])
             if(param.period_channel == True):
