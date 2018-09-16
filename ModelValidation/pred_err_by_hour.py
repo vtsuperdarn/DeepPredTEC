@@ -105,7 +105,7 @@ def add_cbar(fig, coll, bounds=None, label="TEC Unit", cax=None):
             lbl = cbar.ax.yaxis.get_ticklabels()[i]
             lbl.set_visible(False)
     #cbar.ax.tick_params(axis='y',direction='out')
-    cbar.set_label(label)
+    cbar.set_label(label, fontsize=12)
 
     return
 
@@ -131,12 +131,13 @@ def main():
     base_model = "previous_day"
 
     model = "STResNet"
-    #model = "Baseline"
+    err_types = ["Relative Average Absolute Error",
+		 "Average Absolute Error", "Average Absolute Error Std",
+		 "True Average", "Predicted Average"]
+
+#    model = "Baseline"
 #    err_types = ["Relative Average Absolute Error",
-#		 "Average Absolute Error", "Average Absolute Error Std",
-#		 "True Average", "Predicted Average"]
-    err_types = ["Relative Average Absolute Error"]
-		# "Average Absolute Error", "Average Absolute Error Std"]
+#		 "Average Absolute Error", "Average Absolute Error Std"]
 
     window_len = 1 # Hour
     window_dist = 1 # Hour, skips every window_dist hours
@@ -148,11 +149,11 @@ def main():
 	if err_type in ["Average Absolute Error"]:
 	    vmin=0; vmax=10; cbar_label="TEC Unit"
 	if err_type in ["Relative Average Absolute Error"]:
-	    vmin=0; vmax=1; cbar_label="Ratio"
+	    vmin=0; vmax=0.5; cbar_label="Ratio"
 	if err_type in ["Average Absolute Error Std"]:
 	    vmin=0; vmax=5; cbar_label="TEC Unit"
 	if err_type in ["True Average", "Predicted Average"]:
-	    vmin=0; vmax=50; cbar_label="TEC Unit"
+	    vmin=0; vmax=20; cbar_label="TEC Unit"
 
 	# Create empy axes
 	fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
@@ -175,7 +176,7 @@ def main():
 	    
 	    if model == "STResNet":
 		err_dict = calc_avg_err(true_tec, pred_tec)
-	    if model == "baseline":
+	    if model == "Baseline":
 		err_dict = calc_avg_err(true_tec, base_tec)
 
 	    if base_tec is not None:
@@ -190,17 +191,20 @@ def main():
 	    coll = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
 
 	# Set the Super Title
-	plt.suptitle(model + " Model, " + err_type + " for " +\
-		     stime.strftime("%j%d%Y") + "---" + etime.strftime("%j%d%Y"))
+        fig_title = model + " Model, " + err_type + " for " +\
+		    stime.strftime("%b %d, %Y") + " - " + etime.strftime("%b %d, %Y")
+	plt.suptitle(fig_title, x=0.5, y=0.95, fontsize=12)
 
 	# add colorbar
 	fig.subplots_adjust(right=0.90)
-	cbar_ax = fig.add_axes([0.93, 0.25, 0.01, 0.5])
+	cbar_ax = fig.add_axes([0.93, 0.25, 0.02, 0.5])
 	add_cbar(fig, coll, bounds=None, cax=cbar_ax, label=cbar_label)
 
 	fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_2/"
 	fig_name = model + "_" + "_".join(err_type.split()) + ".png"
 	fig.savefig(fig_dir+fig_name, dpi=200, bbox_inches='tight')
+
+        plt.close(fig)
 
     return
 
