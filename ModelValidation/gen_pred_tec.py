@@ -21,6 +21,9 @@ import time
 from omn_utils import OmnData
 from batch_utils import BatchDateUtils, TECUtils
 
+# Set batch size to 1 for texting
+test_batch_size = 1
+
 # Extract hyperparameter values from saved_model_path
 param_values = param.saved_model_path.split("/")[-1].split("_")
 param.batch_size = [int(x.replace("batch", "")) for x in param_values if x.startswith("batch")][0]
@@ -85,13 +88,17 @@ path = param.saved_model_path+"_values"
 omnObj = OmnData(start_date_omni, end_date_omni, param.omn_dbdir, param.omn_db_name, param.omn_table_name, omn_train, param.imf_normalize, path)
 
 # get all corresponding dates for batches
-batchObj = BatchDateUtils(param.start_date, param.end_date, param.batch_size, param.tec_resolution, param.data_point_freq,\
+batchObj = BatchDateUtils(param.start_date, param.end_date, test_batch_size, param.tec_resolution, param.data_point_freq,\
                          param.closeness_freq, closeness_size, param.period_freq, period_size,\
                          param.trend_freq, trend_size, param.num_of_output_tec_maps, param.output_freq,\
                          param.closeness_channel, param.period_channel, param.trend_channel)
                       
 #getting all the datetime from which prediction has to be made                                                  
-date_arr_test = np.array( list(batchObj.batch_dict.keys()) )
+#date_arr_test = np.array( list(batchObj.batch_dict.keys()) )
+pred_horizon = param.tec_resolution*param.output_freq*param.num_of_output_tec_maps  # in minutes
+num_test_iter = int((param.end_date - param.start_date).total_seconds() / 60. / pred_horizon)
+date_arr_test = [param.start_date + dt.timedelta(minutes=i*pred_horizon) for i in range(num_test_iter)]
+
 
 # Bulk load TEC data
 tecObj = TECUtils(param.start_date, param.end_date, param.file_dir, param.tec_resolution, param.load_window,\
@@ -100,8 +107,8 @@ tecObj = TECUtils(param.start_date, param.end_date, param.file_dir, param.tec_re
 weight_matrix = np.load(param.loss_weight_matrix)
 #converting by repeating the weight_matrix into a desired shape of (B, O, H, W)
 weight_matrix_expanded = np.expand_dims(weight_matrix, 0)
-weight_matrix_tiled = np.tile(weight_matrix_expanded, [param.batch_size*param.num_of_output_tec_maps, 1, 1])
-loss_weight_matrix = np.reshape(weight_matrix_tiled, [param.batch_size, param.num_of_output_tec_maps, param.map_height, param.map_width])
+weight_matrix_tiled = np.tile(weight_matrix_expanded, [test_batch_size*param.num_of_output_tec_maps, 1, 1])
+loss_weight_matrix = np.reshape(weight_matrix_tiled, [test_batch_size, param.num_of_output_tec_maps, param.map_height, param.map_width])
 
 #converting the dimension from (B, O, H, W) -> (B, H, W, O)
 loss_weight_matrix = np.transpose(loss_weight_matrix, [0, 2, 3, 1])
@@ -124,7 +131,6 @@ with tf.Session(graph=g.graph) as sess:
     #loading the trained model whose path is given in the params file
     g.saver.restore(sess, param.saved_model_path+param.saved_model)
     
-    b = 1
     loss_values = []
     for te_ind, current_datetime in tqdm(enumerate(date_arr_test)):
         #print("Testing date-->" + current_datetime.strftime("%Y%m%d-%H%M"))
@@ -136,7 +142,7 @@ with tf.Session(graph=g.graph) as sess:
         
         #if we need to use the exogenous module
         if (param.add_exogenous == True):
-            imf_batch = omnObj.get_omn_batch(current_datetime, param.batch_size, param.trend_freq, trend_size )
+            imf_batch = omnObj.get_omn_batch(current_datetime, test_batch_size, param.trend_freq, trend_size )
             
             if(param.closeness_channel == True and param.period_channel == True and param.trend_channel == True):
                 data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
@@ -210,26 +216,21 @@ with tf.Session(graph=g.graph) as sess:
         print("val_loss: {:.3f}".format(loss_v))        
         
         #saving the predictions into seperate directories that are already created
-        j = 0
-        for dtm in curr_batch_time_dict.keys():
+        for j, dtm in curr_batch_time_dict.keys():
             tec_pred = dtm.strftime("%Y%m%d.%H%M") + "_pred.npy"
             #tec_true = dtm.strftime("%Y%m%d.%H%M") + "_true.npy"
             tec_close = dtm.strftime("%Y%m%d.%H%M") + "_close.npy"
             tec_period = dtm.strftime("%Y%m%d.%H%M") + "_period.npy"
             tec_trend = dtm.strftime("%Y%m%d.%H%M") + "_trend.npy"
             np.save(path_pred+tec_pred, pred[j])
-            np.save(path_pred+tec_true, truth[j])
+            #np.save(path_pred+tec_true, truth[j])
             if(param.closeness_channel == True):
                 np.save(path_pred+tec_close, closeness[j])
             if(param.period_channel == True):
                 np.save(path_pred+tec_period, period[j])
             if(param.trend_channel == True):    
                 np.save(path_pred+tec_trend, trend[j])
-            j += 1
             
-        print ('Saving {} batch with {:.1f}'.format(b, loss_v.item()))
-        b += 1
-        
     loss_values = np.array(loss_values)
     print ('Saving loss values in the .npy file ...')    
     np.save(path_pred+'prediction_loss.npy', loss_values)        
