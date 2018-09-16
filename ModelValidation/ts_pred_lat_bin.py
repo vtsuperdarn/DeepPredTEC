@@ -5,6 +5,7 @@ import dask
 import glob
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
 
 class ModValTSLat(object):
     """
@@ -127,7 +128,7 @@ class ModValTSLat(object):
 
 
     def generate_ts_plots(self, figName, downCastDF=True,\
-             remove_neg_tec_rows=True):
+             remove_neg_tec_rows=True, legenNcols=3, lgndFontSize='x-small'):
         """
         Generate plots based on the input conditions
         (1) remove_neg_tec_rows : remove all the rows where tec 
@@ -139,14 +140,25 @@ class ModValTSLat(object):
         predTECDF["Mlon"] = predTECDF["Mlon"].astype(numpy.float16)
         predTECDF["Mlat"] = predTECDF["Mlat"].astype(numpy.float16)
         predTECDF["med_tec"] = predTECDF["med_tec"].astype(numpy.float16)
+        # Same for True TEC DF
+        trueTECDF["Mlon"] = trueTECDF["Mlon"].astype(numpy.float16)
+        trueTECDF["Mlat"] = trueTECDF["Mlat"].astype(numpy.float16)
+        trueTECDF["med_tec"] = trueTECDF["med_tec"].astype(numpy.float16)
         # remove all rows where TEC values are negative
         if remove_neg_tec_rows:
             predTECDF.loc[(predTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
             predTECDF = predTECDF.dropna()
+            # same true tec df
+            trueTECDF.loc[(trueTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            trueTECDF = trueTECDF.dropna()
         if self.mlonRange is not None:
             pretTECDF = pretTECDF[ (\
                      pretTECDF["Mlon"] >= self.mlonRange[0] ) &\
                      (pretTECDF["Mlon"] <= self.mlonRange[1] ) ]
+            # same for true df
+            trueTECDF = trueTECDF[ (\
+                     trueTECDF["Mlon"] >= self.mlonRange[0] ) &\
+                     (trueTECDF["Mlon"] <= self.mlonRange[1] ) ]
         # Divide the Mlats in the DF into bins
         minLat = int(self.latBinSize * round(\
                     predTECDF["Mlat"].min()/self.latBinSize))
@@ -158,29 +170,61 @@ class ModValTSLat(object):
                             pandas.cut( predTECDF["Mlat"], \
                                        bins=latBins ) ], axis=1 )
         predTECDF.columns = list(colList) + ["mlat_bins"]
+        # same for true tec df
+        trueTECDF = pandas.concat( [ trueTECDF, \
+                            pandas.cut( trueTECDF["Mlat"], \
+                                       bins=latBins ) ], axis=1 )
+        trueTECDF.columns = list(colList) + ["mlat_bins"]
         # Finally get to the plotting section
         # group by mlat bins and date to develop the plot
-        mBinDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ] ].groupby(\
-                    ["mlat_bins", "date"] ).median().reset_index()
+        mBinPredDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                     ].groupby(["mlat_bins", "date"] ).median().reset_index()
+        mBinPredDF.columns = [ "mlat_bins", "date", "mean_pred_tec" ]
+        # True DF
+        mBinTrueDF = trueTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                     ].groupby(["mlat_bins", "date"]).median().reset_index()
+        mBinTrueDF.columns = [ "mlat_bins", "date", "mean_true_tec" ]
+        # Merge the dfs
+        mBinTrueDF = pandas.merge( mBinTrueDF, mBinPredDF,\
+                         on=["mlat_bins", "date"] )
+        mBinTrueDF["abs_mean_tec_err"] = numpy.abs(\
+                 mBinTrueDF["mean_pred_tec"] - mBinTrueDF["mean_true_tec"] )
+        mBinTrueDF["rel_mean_tec_err"] = \
+                mBinTrueDF["abs_mean_tec_err"]/mBinTrueDF["mean_true_tec"]
         # set seaborn styling
         sns.set_style("whitegrid")
         sns.set_context("poster")
-        f = plt.figure(figsize=(12, 8))
-        ax = f.add_subplot(1,1,1)
+        # f = plt.figure(figsize=(12, 8))
+        # ax = f.add_subplot(1,1,1)
+        f, axArr = plt.subplots(3, sharex=True)
         # Load an example dataset with long-form data
         # # Plot the responses for different events and regions
-        sns.lineplot(x="date", y="med_tec",
+        plt1 = sns.lineplot(x="date", y="mean_pred_tec",
                      hue="mlat_bins",
-                     data=grpDF,ax=ax)
-        ax.get_xaxis().set_major_formatter(DateFormatter('%m-%d'))
-        ax.set_ylabel("TEC", fontsize=16)
-        ax.set_xlabel("DATE (UT)", fontsize=16)
+                     data=mBinPredDF,ax=axArr[0])
+        plt1.legend(loc=8, bbox_to_anchor=(0.5, 1.),\
+                 borderaxespad=0., ncol=legenNcols, fontsize=lgndFontSize)
+        plt2 = sns.lineplot(x="date", y="mean_true_tec",
+                     hue="mlat_bins",
+                     data=mBinTrueDF,ax=axArr[1])
+        # remove legend from axis 'ax'
+        plt2.legend_.remove()
+        plt3 = sns.lineplot(x="date", y="abs_mean_tec_err",
+                     hue="mlat_bins",
+                     data=mBinTrueDF,ax=axArr[2])
+        # remove legend from axis 'ax'
+        plt3.legend_.remove()
+        axArr[0].set_ylabel(" Pred. TEC", fontsize=14)
+        axArr[1].set_ylabel(" True. TEC", fontsize=14)
+        axArr[2].set_ylabel(" Absolute Err.", fontsize=14)
+        axArr[-1].set_xlabel("DATE (UT)", fontsize=16)
+        for _ax in axArr:
+            _ax.get_xaxis().set_major_formatter(DateFormatter('%m-%d'))
         # Put the legend out of the figure
-        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.tick_params(labelsize=16)
-        fig.savefig(figName,bbox_inches='tight')
+        f.savefig(figName,bbox_inches='tight')
     
-    # @dask.delayed
     def load_npy_file(self, currDate, fName, fType):
         """
         Load a correponding TEC file into the dict
@@ -200,7 +244,4 @@ if __name__ == "__main__":
              trueTecBaseDir, timeRange=timeRange)
     figName = "/home/bharat/Desktop/marc-examples/t/t2.pdf"
     tsObj.generate_ts_plots(figName)
-
-
-
 
