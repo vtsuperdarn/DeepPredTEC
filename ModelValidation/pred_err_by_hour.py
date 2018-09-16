@@ -69,19 +69,51 @@ def calc_avg_err(true_tec, pred_tec):
     pred_true_diff =  np.abs(pred_tec - true_tec)
     abs_avg_err = pred_true_diff.mean(axis=0)
     err_dict["pred_true_diff"] = pred_true_diff
+    err_dict["True Average"] = true_tec.mean(axis=0)
+    err_dict["Predicted Average"] = pred_tec.mean(axis=0)
     err_dict["Average Absolute Error"] = abs_avg_err
-    err_dict["abs_avg_err_std"] = pred_true_diff.std(axis=0)
+    err_dict["Average Absolute Error Std"] = pred_true_diff.std(axis=0)
     err_dict["abs_avg_err_max"] = pred_true_diff.max(axis=0)
     err_dict["abs_avg_err_min"] = pred_true_diff.min(axis=0)
-    err_dict["abs_avg_err_rel"] = np.divide(abs_avg_err,
-                                            true_tec.mean(axis=0))
+    err_dict["Relative Average Absolute Error"] = np.divide(abs_avg_err,
+                                                            true_tec.mean(axis=0))
 
     return err_dict
+
+def add_cbar(fig, coll, bounds=None, label="TEC Unit", cax=None):
+
+    from matplotlib.ticker import MultipleLocator
+    # add color bar
+    if cax:
+        cbar=fig.colorbar(coll, cax=cax, orientation="vertical",
+                          boundaries=bounds, drawedges=False)
+    else:
+        cbar=fig.colorbar(coll, orientation="vertical", shrink=.65,
+                          boundaries=bounds, drawedges=False)
+
+    #define the colorbar labels
+    if bounds:
+        l = []
+        for i in range(0,len(bounds)):
+            if i == 0 or i == len(bounds)-1:
+                l.append(' ')
+                continue
+            l.append(str(int(bounds[i])))
+        cbar.ax.set_yticklabels(l)
+    else:
+        for i in [0, -1]:
+            lbl = cbar.ax.yaxis.get_ticklabels()[i]
+            lbl.set_visible(False)
+    #cbar.ax.tick_params(axis='y',direction='out')
+    cbar.set_label(label)
+
+    return
 
 def main():
 
     # Select a model and set the path for predicted TEC map
-    model_value = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717_values"
+    #model_value = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717_values"
+    model_value = "model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464_values"
     model_value_dir = os.path.join("./model_results/", model_value)
     pred_tec_dir = os.path.join(model_value_dir, "predicted_tec/")
     filled_tec_dir = "../data/tec_map/filled/"
@@ -98,58 +130,77 @@ def main():
     etime = dt.datetime(2015, 4, 1)
     base_model = "previous_day"
 
-    models = ["STResNet", base_model]
-    err_types = ["Average Absolute Error"]
-
-    vmin=0; vmax=5
+    model = "STResNet"
+    #model = "Baseline"
+#    err_types = ["Relative Average Absolute Error",
+#		 "Average Absolute Error", "Average Absolute Error Std",
+#		 "True Average", "Predicted Average"]
+    err_types = ["Relative Average Absolute Error"]
+		# "Average Absolute Error", "Average Absolute Error Std"]
 
     window_len = 1 # Hour
     window_dist = 1 # Hour, skips every window_dist hours
     start_hours = [x for x in range(0, 24-window_len, window_len+window_dist)]
     end_hours = [x for x in range(window_len, 24, window_len+window_dist)]
 
-    for model in models:
-        for err_type in err_types:
+    for err_type in err_types:
 
-            # Create empy axes
-            fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
-                                     sharex=True, sharey=True)
-            fig.subplots_adjust(hspace=0.3, wspace=0.3)
-            if len(axes) > 1:
-                axes = [ax for lst in axes for ax in lst]
-            else:
-                axes = [axes]
-            
-            # Loop through the time windows
-            for i in range(len(start_hours)): 
-            #for i in [0]: 
-                ax = axes[i]
-                time_window = [start_hours[i], end_hours[i]]
-                true_tec, pred_tec, base_tec = get_tec(stime, etime, pred_tec_dir,
-                                                       time_window=time_window,
-                                                       pred_time_step=pred_time_step,
-                                                       base_model=base_model,
-                                                       filled_tec_dir=filled_tec_dir)
-                
-                if model == "STResNet":
-                    err_dict = calc_avg_err(true_tec, pred_tec)
-                else:
-                    err_dict = calc_avg_err(true_tec, base_tec)
+	if err_type in ["Average Absolute Error"]:
+	    vmin=0; vmax=10; cbar_label="TEC Unit"
+	if err_type in ["Relative Average Absolute Error"]:
+	    vmin=0; vmax=1; cbar_label="Ratio"
+	if err_type in ["Average Absolute Error Std"]:
+	    vmin=0; vmax=5; cbar_label="TEC Unit"
+	if err_type in ["True Average", "Predicted Average"]:
+	    vmin=0; vmax=50; cbar_label="TEC Unit"
 
-                if base_tec is not None:
-                    err_dict_base = calc_avg_err(true_tec, pred_tec)
+	# Create empy axes
+	fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
+				 sharex=True, sharey=True)
+	fig.subplots_adjust(hspace=0.3, wspace=0.3)
+	if len(axes) > 1:
+	    axes = [ax for lst in axes for ax in lst]
+	else:
+	    axes = [axes]
+	
+	# Loop through the time windows
+	for i in range(len(start_hours)): 
+	    ax = axes[i]
+	    time_window = [start_hours[i], end_hours[i]]
+	    true_tec, pred_tec, base_tec = get_tec(stime, etime, pred_tec_dir,
+						   time_window=time_window,
+						   pred_time_step=pred_time_step,
+						   base_model=base_model,
+						   filled_tec_dir=filled_tec_dir)
+	    
+	    if model == "STResNet":
+		err_dict = calc_avg_err(true_tec, pred_tec)
+	    if model == "baseline":
+		err_dict = calc_avg_err(true_tec, base_tec)
 
-                x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
-                y = list(range(15, 100, 10))
-                ax.set_xticklabels(tuple(x), fontsize=10)
-                ax.set_yticklabels(y, fontsize=10)
-                ax.set_title("UT Hour = " + str(time_window))
+	    if base_tec is not None:
+		err_dict_base = calc_avg_err(true_tec, pred_tec)
 
-                im = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
+	    x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
+	    y = list(range(15, 100, 10))
+	    ax.set_xticklabels(tuple(x), fontsize=10)
+	    ax.set_yticklabels(y, fontsize=10)
+	    ax.set_title("UT Hour = " + str(time_window))
 
-            fig_dir = "/home/muhammad/Dropbox/ARC/"
-            fig_name = model + "_" + "_".join(err_type.split()) + ".png"
-            fig.savefig(fig_dir+fig_name, dpi=200, bbox_inches='tight')
+	    coll = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
+
+	# Set the Super Title
+	plt.suptitle(model + " Model, " + err_type + " for " +\
+		     stime.strftime("%j%d%Y") + "---" + etime.strftime("%j%d%Y"))
+
+	# add colorbar
+	fig.subplots_adjust(right=0.90)
+	cbar_ax = fig.add_axes([0.93, 0.25, 0.01, 0.5])
+	add_cbar(fig, coll, bounds=None, cax=cbar_ax, label=cbar_label)
+
+	fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_2/"
+	fig_name = model + "_" + "_".join(err_type.split()) + ".png"
+	fig.savefig(fig_dir+fig_name, dpi=200, bbox_inches='tight')
 
     return
 
