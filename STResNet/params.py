@@ -14,8 +14,8 @@ class Params(object):
     
     # TEC data loading location and times
     file_dir = "../data/tec_map/filled/"
-    start_date = datetime.datetime(2015, 3, 16)
-    end_date = datetime.datetime(2015, 3, 18)
+    start_date = datetime.datetime(2015, 3, 1)
+    end_date = datetime.datetime(2015, 4, 1)
     
     # OMNI IMF data
     omn_dbdir = "../data/sqlite3/"
@@ -89,8 +89,8 @@ class Params(object):
     #saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_323.49480175971985"
     #saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-    #saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-    saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464"
+    saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+    #saved_model_path = "../ModelValidation/model_results/model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464"
     
     logdir = "train"
     

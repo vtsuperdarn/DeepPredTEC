@@ -133,7 +133,7 @@ with tf.Session(graph=g.graph) as sess:
     
     loss_values = []
     for te_ind, current_datetime in tqdm(enumerate(date_arr_test)):
-        #print("Testing date-->" + current_datetime.strftime("%Y%m%d-%H%M"))
+        print("Testing data point-->" + current_datetime.strftime("%Y%m%d-%H%M"))
 
         #get the batch of data points
         curr_batch_time_dict = batchObj.batch_dict[current_datetime]
@@ -216,8 +216,8 @@ with tf.Session(graph=g.graph) as sess:
         print("val_loss: {:.3f}".format(loss_v))        
         
         #saving the predictions, one file for one TEC map
-        for j, point_dtm_key in curr_batch_time_dict.keys():
-            for k, dtm in enumerate(curr_batch_time_dict[dtm_key]["future_dtm"]):
+        for j, point_dtm_key in enumerate(curr_batch_time_dict.keys()):
+            for k, dtm in enumerate(curr_batch_time_dict[point_dtm_key]["future_dtm"]):
                 tec_pred = dtm.strftime("%Y%m%d.%H%M") + "_pred.npy"
                 np.save(path_pred+tec_pred, pred[j, :, :, k])
 
