@@ -379,6 +379,111 @@ class ModValTSLat(object):
         # plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         # plt.tick_params(labelsize=14)
         f.savefig(figName,bbox_inches='tight')
+
+    def generate_err_box_plots(self, figName, downCastDF=True,\
+             remove_neg_tec_rows=True, legenNcols=4,\
+             modelType="deep", statType="median", errLatRange=None):
+        """
+        Generate plots based on the input conditions
+        (1) remove_neg_tec_rows : remove all the rows where tec 
+                                  values are negative!
+        """
+        if modelType == "deep":
+            (predTECDF, trueTECDF) = self.read_dl_model_true_data()
+        else:
+            (predTECDF, trueTECDF) = self.read_baseline_model_true_data()
+        # Downcast Mlon, Mlat and med_tec to float16's, this way
+        # we reduce the space occupied by the DF by almost 1/2
+        predTECDF["Mlon"] = predTECDF["Mlon"].astype(numpy.float16)
+        predTECDF["Mlat"] = predTECDF["Mlat"].astype(numpy.float16)
+        predTECDF["med_tec"] = predTECDF["med_tec"].astype(numpy.float16)
+        # Same for True TEC DF
+        trueTECDF["Mlon"] = trueTECDF["Mlon"].astype(numpy.float16)
+        trueTECDF["Mlat"] = trueTECDF["Mlat"].astype(numpy.float16)
+        trueTECDF["med_tec"] = trueTECDF["med_tec"].astype(numpy.float16)
+        # remove all rows where TEC values are negative
+        if remove_neg_tec_rows:
+            predTECDF.loc[(predTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            predTECDF = predTECDF.dropna()
+            # same true tec df
+            trueTECDF.loc[(trueTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            trueTECDF = trueTECDF.dropna()
+        if self.mlonRange is not None:
+            pretTECDF = pretTECDF[ (\
+                     pretTECDF["Mlon"] >= self.mlonRange[0] ) &\
+                     (pretTECDF["Mlon"] <= self.mlonRange[1] ) ]
+            # same for true df
+            trueTECDF = trueTECDF[ (\
+                     trueTECDF["Mlon"] >= self.mlonRange[0] ) &\
+                     (trueTECDF["Mlon"] <= self.mlonRange[1] ) ]
+        # Divide the Mlats in the DF into bins
+        minLat = int(self.latBinSize * round(\
+                    predTECDF["Mlat"].min()/self.latBinSize))
+        maxLat = int(self.latBinSize * round(\
+                    predTECDF["Mlat"].max()/self.latBinSize))
+        latBins = range(minLat, maxLat + self.latBinSize, self.latBinSize)
+        colList = predTECDF.columns
+        predTECDF = pandas.concat( [ predTECDF, \
+                            pandas.cut( predTECDF["Mlat"], \
+                                       bins=latBins ) ], axis=1 )
+        predTECDF.columns = list(colList) + ["mlat_bins"]
+        # same for true tec df
+        trueTECDF = pandas.concat( [ trueTECDF, \
+                            pandas.cut( trueTECDF["Mlat"], \
+                                       bins=latBins ) ], axis=1 )
+        trueTECDF.columns = list(colList) + ["mlat_bins"]
+        # Finally get to the plotting section
+        # group by mlat bins and date to develop the plot
+        if statType == "mean":
+            mBinPredDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                         ].groupby(["mlat_bins", "date"] ).mean().reset_index()
+            mBinPredDF.columns = [ "mlat_bins", "date", "mean_pred_tec" ]
+            # True DF
+            mBinTrueDF = trueTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                         ].groupby(["mlat_bins", "date"]).mean().reset_index()
+            mBinTrueDF.columns = [ "mlat_bins", "date", "mean_true_tec" ]
+        else:
+            mBinPredDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                         ].groupby(["mlat_bins", "date"] ).median().reset_index()
+            mBinPredDF.columns = [ "mlat_bins", "date", "mean_pred_tec" ]
+            # True DF
+            mBinTrueDF = trueTECDF[ [ "mlat_bins", "date", "med_tec" ]\
+                         ].groupby(["mlat_bins", "date"]).median().reset_index()
+            mBinTrueDF.columns = [ "mlat_bins", "date", "mean_true_tec" ]
+        # Merge the dfs
+        mBinTrueDF = pandas.merge( mBinTrueDF, mBinPredDF,\
+                         on=["mlat_bins", "date"] )
+        mBinTrueDF["abs_mean_tec_err"] = numpy.abs(\
+                 mBinTrueDF["mean_pred_tec"] - mBinTrueDF["mean_true_tec"] )
+        mBinTrueDF["rel_mean_tec_err"] = \
+                mBinTrueDF["abs_mean_tec_err"]/mBinTrueDF["mean_true_tec"]
+        # set seaborn styling
+        sns.set_style("whitegrid")
+        # sns.set_context("poster")
+        f = plt.figure(figsize=(12, 8))
+        ax = f.add_subplot(1,1,1)
+        if errLatRange is not None:
+            mlatLabs = mBinTrueDF["mlat_bins"].cat.categories.tolist()
+            selMlatLabs = []
+            for _ml in mlatLabs:
+                if ( (_ml.left > errLatRange[0]) & (_ml.left < errLatRange[1]) ):
+                    selMlatLabs.append( _ml )
+            if len(selMlatLabs) > 0:
+                eplt = sns.boxplot(x="mlat_bins", y="rel_mean_tec_err",
+                             data=mBinTrueDF[ mBinTrueDF["mlat_bins"].isin(selMlatLabs)\
+                                 ],ax=ax)
+            else:
+                eplt = sns.boxplot(x="mlat_bins", y="rel_mean_tec_err",
+                             data=mBinTrueDF,ax=ax)
+        else:
+            eplt = sns.boxplot(x="mlat_bins", y="rel_mean_tec_err",
+                             data=mBinTrueDF,ax=ax)
+            ax.set_ylabel(" Relative Err.", fontsize=14)
+            ax.set_xlabel("MLAT", fontsize=14)
+            ax.tick_params(labelsize=14)
+            ax.set_ylim([0, 2.])
+            f.savefig(figName,bbox_inches='tight')
+
     
     def load_npy_file(self, currDate, fName, fType):
         """
