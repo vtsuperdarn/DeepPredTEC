@@ -92,13 +92,37 @@ class LocDataPnts(object):
         ax.set_xlabel("MLON", fontsize=14)
         ax.tick_params(labelsize=14)
         f.savefig(figName, bbox_inches='tight')
-
-    
+        
+    def generate_mask_file(self, percCutoff=80,\
+                           replaceVal=0., saveFName=None):
+        """
+        Get the DF size and generate the stat plots
+        """
+        cntSeaMap = ListedColormap(sns.color_palette("Reds"))
+        locDF = self.read_data()
+        # Again groupby Mlat, Mlon and get teh total counts
+        locStatDF = locDF[["Mlat", "Mlon", "counts"]\
+                        ].groupby(["Mlat", "Mlon"]\
+                        ).sum().reset_index()
+        locStatDF["perc_count"] = locStatDF["counts"]*100.\
+                            /locStatDF["counts"].max()
+        # replace all values below cutoff percent
+        locStatDF["mask"] = [ replaceVal if _cp < percCutoff\
+                             else 1. for _cp in\
+                             locStatDF["perc_count"]]
+        wghtMat = locStatDF[ ["Mlon", "Mlat",\
+                        "mask"] ].pivot( "Mlon", "Mlat" )
+        # replace all nan's with zeros and convert
+        # to numpy matrix
+        wghtMat = wghtMat.fillna(0.).as_matrix()
+        # save as npy file!
+        if saveFName:
+            with open(saveFName, "w") as _nfn:
+                numpy.save(_nfn, wghtMat)
 
 if __name__ == "__main__":
     timeRange = [ datetime.datetime(2012,1,1), datetime.datetime(2012,12,31) ]
     tsObj = LocDataPnts(timeRange)
     figName = "/home/bharat/Desktop/marc-examples/t/data_cov.pdf"
     tsObj.generate_stat_plot(figName)
-
-
+    
