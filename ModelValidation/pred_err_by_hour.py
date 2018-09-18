@@ -130,14 +130,14 @@ def main():
     etime = dt.datetime(2015, 4, 1)
     base_model = "previous_day"
 
-    model = "STResNet"
-    err_types = ["Relative Average Absolute Error",
-		 "Average Absolute Error", "Average Absolute Error Std",
-		 "True Average", "Predicted Average"]
-
-#    model = "Baseline"
+#    model = "STResNet"
 #    err_types = ["Relative Average Absolute Error",
-#		 "Average Absolute Error", "Average Absolute Error Std"]
+#		 "Average Absolute Error", "Average Absolute Error Std",
+#		 "True Average", "Predicted Average"]
+
+    model = "Baseline"
+    err_types = ["Relative Average Absolute Error",
+		 "Average Absolute Error", "Average Absolute Error Std"]
 
     window_len = 1 # Hour
     window_dist = 1 # Hour, skips every window_dist hours
@@ -145,15 +145,14 @@ def main():
     end_hours = [x for x in range(window_len, 24, window_len+window_dist)]
 
     for err_type in err_types:
-
-	if err_type in ["Average Absolute Error"]:
-	    vmin=0; vmax=10; cbar_label="TEC Unit"
-	if err_type in ["Relative Average Absolute Error"]:
-	    vmin=0; vmax=0.5; cbar_label="Ratio"
-	if err_type in ["Average Absolute Error Std"]:
-	    vmin=0; vmax=5; cbar_label="TEC Unit"
-	if err_type in ["True Average", "Predicted Average"]:
-	    vmin=0; vmax=20; cbar_label="TEC Unit"
+        if err_type in ["Average Absolute Error"]:
+            vmin=0; vmax=10; cbar_label="TEC Unit"
+        if err_type in ["Relative Average Absolute Error"]:
+            vmin=0; vmax=0.5; cbar_label="Ratio"
+        if err_type in ["Average Absolute Error Std"]:
+            vmin=0; vmax=5; cbar_label="TEC Unit"
+        if err_type in ["True Average", "Predicted Average"]:
+            vmin=0; vmax=20; cbar_label="TEC Unit"
 
 	# Create empy axes
 	fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
@@ -182,13 +181,14 @@ def main():
 	    if base_tec is not None:
 		err_dict_base = calc_avg_err(true_tec, pred_tec)
 
-	    x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
-	    y = list(range(15, 100, 10))
+	    coll = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
+	    #x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
+	    #x = list(range(325, 360, 20)) + list(range(5, 35, 20)) 
+	    x = list(range(-35, 0, 20)) + list(range(5, 35, 20)) 
+	    y = list(range(15, 90, 20))
 	    ax.set_xticklabels(tuple(x), fontsize=10)
 	    ax.set_yticklabels(y, fontsize=10)
 	    ax.set_title("UT Hour = " + str(time_window))
-
-	    coll = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
 
 	# Set the Super Title
         fig_title = model + " Model, " + err_type + " for " +\
