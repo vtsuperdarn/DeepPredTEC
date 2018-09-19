@@ -151,7 +151,7 @@ with tf.Session(graph=g.graph) as sess:
                     # get the batch of data points
                     t1 = time.time()
                     curr_batch_time_dict = batchObj.batch_dict[current_datetime]
-                    print ("curr_batch_time_dict:", curr_batch_time_dict)
+                    #print ("curr_batch_time_dict:", curr_batch_time_dict)
                     #here the data_trend will be empty
                     data_close, data_period, data_trend, data_out = tecObj.create_batch(curr_batch_time_dict)
                     t2 = time.time()
