@@ -155,7 +155,7 @@ class LocDataPnts(object):
         # unpivot the DF
         maskDF = dfRef.unstack().reset_index(name='med_tec')
         #plot the DF
-        pltSeaMap = ListedColormap(sns.color_palette("Reds"))
+        pltSeaMap = ListedColormap(sns.color_palette("RdBu_r"))
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
 #         m1 = utils.plotUtils.mapObj(boundinglat=10.,\
