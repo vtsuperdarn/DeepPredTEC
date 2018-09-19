@@ -95,7 +95,8 @@ def add_cbar(fig, coll, bounds=None, label="TEC Unit", cax=None):
     if bounds:
         l = []
         for i in range(0,len(bounds)):
-            if i == 0 or i == len(bounds)-1:
+            #if i == 0 or i == len(bounds)-1:
+            if i == len(bounds)-1:
                 l.append(' ')
                 continue
             l.append(str(int(bounds[i])))
@@ -137,7 +138,8 @@ def main():
 
     model = "Baseline"
     err_types = ["Relative Average Absolute Error",
-		 "Average Absolute Error", "Average Absolute Error Std"]
+		 "Average Absolute Error", "Average Absolute Error Std",
+                 "Relative Error Ratio"]
 
     window_len = 1 # Hour
     window_dist = 1 # Hour, skips every window_dist hours
@@ -148,11 +150,13 @@ def main():
         if err_type in ["Average Absolute Error"]:
             vmin=0; vmax=10; cbar_label="TEC Unit"
         if err_type in ["Relative Average Absolute Error"]:
-            vmin=0; vmax=0.5; cbar_label="Ratio"
+            vmin=0; vmax=0.5; cbar_label="Percentage"
         if err_type in ["Average Absolute Error Std"]:
             vmin=0; vmax=5; cbar_label="TEC Unit"
         if err_type in ["True Average", "Predicted Average"]:
             vmin=0; vmax=20; cbar_label="TEC Unit"
+        if err_type in ["Relative Error Ratio"]:
+            vmin=1; vmax=4; cbar_label="Ratio"
 
 	# Create empy axes
 	fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
@@ -177,6 +181,10 @@ def main():
 		err_dict = calc_avg_err(true_tec, pred_tec)
 	    if model == "Baseline":
 		err_dict = calc_avg_err(true_tec, base_tec)
+                if err_type == "Relative Error Ratio":
+                    err_dict_stresnet = calc_avg_err(true_tec, pred_tec)
+                    err_dict["Relative Error Ratio"] = np.divide(err_dict["Relative Average Absolute Error"],
+                                                                 err_dict_stresnet["Relative Average Absolute Error"])
 
 	    if base_tec is not None:
 		err_dict_base = calc_avg_err(true_tec, pred_tec)
@@ -200,9 +208,12 @@ def main():
 	cbar_ax = fig.add_axes([0.93, 0.25, 0.02, 0.5])
 	add_cbar(fig, coll, bounds=None, cax=cbar_ax, label=cbar_label)
 
-	fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_2/"
+	#fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_2/"
+	fig_dir = os.path.join("./plots/", model_value)
+        if not os.path.exists(fig_dir):
+            os.makedirs(fig_dir)
 	fig_name = model + "_" + "_".join(err_type.split()) + ".png"
-	fig.savefig(fig_dir+fig_name, dpi=200, bbox_inches='tight')
+	fig.savefig(os.path.join(fig_dir,fig_name), dpi=200, bbox_inches='tight')
 
         plt.close(fig)
 
