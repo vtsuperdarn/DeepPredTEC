@@ -124,12 +124,15 @@ def main():
     param_values = model_value.split("/")[-1].split("_")
     output_freq = [int(x.replace("of", "")) for x in param_values if x.startswith("of")][0]
     num_of_output_tec_maps = [int(x.replace("otec", "")) for x in param_values if x.startswith("otec")][0]
-
     pred_time_step = tec_resolution * output_freq
 
     stime = dt.datetime(2015, 3, 1)
     etime = dt.datetime(2015, 4, 1)
+
     base_model = "previous_day"
+    mask_tec = True
+    mask_matrix = np.load("../WeightMatrix/mask-2011-2013-80perc.npy")
+    mask_matrix = np.logical_not(mask_matrix.T).astype(int)
 
 #    model = "STResNet"
 #    err_types = ["Relative Average Absolute Error",
@@ -189,7 +192,10 @@ def main():
 	    if base_tec is not None:
 		err_dict_base = calc_avg_err(true_tec, pred_tec)
 
-	    coll = ax.pcolormesh(err_dict[err_type], cmap='jet', vmin=vmin, vmax=vmax)
+            var = err_dict[err_type]
+            if mask_tec:
+                var = np.ma.masked_array(var, mask_matrix, fill_value=np.nan)
+	    coll = ax.pcolormesh(var, cmap='jet', vmin=vmin, vmax=vmax)
 	    #x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
 	    #x = list(range(325, 360, 20)) + list(range(5, 35, 20)) 
 	    x = list(range(-35, 0, 20)) + list(range(5, 35, 20)) 
@@ -212,8 +218,11 @@ def main():
 	fig_dir = os.path.join("./plots/", model_value)
         if not os.path.exists(fig_dir):
             os.makedirs(fig_dir)
-	fig_name = model + "_" + "_".join(err_type.split()) + ".png"
-	fig.savefig(os.path.join(fig_dir,fig_name), dpi=200, bbox_inches='tight')
+	fig_name = model + "_" + "_".join(err_type.split())
+        if mask_tec:
+            fig_name = fig_name + "_masked"
+
+	fig.savefig(os.path.join(fig_dir,fig_name) + ".png", dpi=200, bbox_inches='tight')
 
         plt.close(fig)
 
