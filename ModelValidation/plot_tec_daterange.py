@@ -73,13 +73,15 @@ class DatePlots(object):
             # get the name of the file to be read
             _modfn = self.modelDir + _ct.strftime("%Y%m%d") + "." +\
                      _ct.strftime("%H%M") + "_pred.npy"
-            _ct += datetime.timedelta(hours=self.timeInterval)
             # get the fName for actual data dir
             # Load the actual data
-            self.load_npy_file(_ct, _trufn, "true")
             _trufn = trueTecBaseDir + _ct.strftime("%Y%m%d") +\
                          "/" + _ct.strftime("%Y%m%d") +\
                          "." + _ct.strftime("%H%M") + ".npy"
+            self.load_npy_file(_ct, _trufn, "true")
+            _ct += datetime.timedelta(hours=self.timeInterval)
+
+            
 
     def load_npy_file(self, currDate, fName, fType):
         """
@@ -97,29 +99,22 @@ class DatePlots(object):
                 self.tecTrueDict[currDate] = numpy.load(fName)
 
     def plot_data(self, figName, pltType="pred", nCols=3,\
-             cmap=ListedColormap(sns.color_palette("RdYlBu_r"))):
+             cmap="jet",\
+                    refInpDir="/sd-data/med_filt_tec/",\
+                    refFileDate=datetime.datetime(2015,1,1)):
         """
         Plot the data!
         pltType : 1) pred - only predicted TEC maps
                   2) true - only true TEC maps
-                  3) both - both pred and true tec maps side by side
         nCols : number of columns in the plot grid.
         """
         # read in the data
         if pltType == "pred":
             self.load_pred_tec_data()
             tecDictKeys = self.tecModelDict.keys()
-        elif pltType =="true":
+        else:
             self.load_true_tec_data()
             tecDictKeys = self.tecTrueDict.keys()
-        else:
-            self.load_pred_tec_data()
-            self.load_true_tec_data()
-            tecDictKeys = self.tecModelDict.keys()
-            # Also if we are plotting both pred and true maps
-            # side by side! we'll just have two cols
-            # overwrite nCols in that case
-            nCols = 2
         # We need to convert the TEC array to a DF for plotting
         # read a dummy tec file into pandas DF to convert the numpy
         # files into a DF with appropriate columns
@@ -145,7 +140,7 @@ class DatePlots(object):
         # Now we'll have to decide on the plot grid
         # we'll try to have a set num of columns 
         # and decide the no.of rows accordingly!
-        nRows = len( self.tecModelDict.keys() )/nCols
+        nRows = len( tecDictKeys )/nCols
         # Now set the plot
         sns.set_style("whitegrid")
         fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row')
@@ -159,19 +154,54 @@ class DatePlots(object):
                     dfRef[dfRef.columns] = self.tecModelDict[_tk]
                     # unpivot the DF
                     tecDF = dfRef.unstack().reset_index(name='med_tec')
-
-
-                ax[i, j].text(0.5, 0.5, str((i, j)),
-                              fontsize=18, ha='center')
+                    pltDF = tecDF[ ["Mlon", "Mlat",\
+                        "med_tec"] ].pivot( "Mlon", "Mlat" )
+                    pltDF = pltDF.fillna(0.)
+                    mlonVals = pltDF.index.values
+                    mlatVals = pltDF.columns.levels[1].values
+                    mlonCntr, mlatCntr  = numpy.meshgrid( mlonVals, mlatVals )
+                    # Mask the nan values! pcolormesh can't handle them well!
+                    cntVals = numpy.ma.masked_where(\
+                                    pltDF["med_tec"].values == 0,\
+                                    pltDF["med_tec"].values)
+                    tecPlot = ax[i, j].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
+                                    cmap=cmap, vmin=0, vmax=20)
+                    titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
+                    ax[i, j].set_title(titleStr, fontsize=8)
+                else:
+                    # replace the values of dfRef with the tec data
+                    _tk = tecDictKeys[pltCntr]
+                    dfRef[dfRef.columns] = self.tecTrueDict[_tk]
+                    # unpivot the DF
+                    tecDF = dfRef.unstack().reset_index(name='med_tec')
+                    pltDF = tecDF[ ["Mlon", "Mlat",\
+                        "med_tec"] ].pivot( "Mlon", "Mlat" )
+                    pltDF = pltDF.fillna(0.)
+                    mlonVals = pltDF.index.values
+                    mlatVals = pltDF.columns.levels[1].values
+                    mlonCntr, mlatCntr  = numpy.meshgrid( mlonVals, mlatVals )
+                    # Mask the nan values! pcolormesh can't handle them well!
+                    cntVals = numpy.ma.masked_where(\
+                                    pltDF["med_tec"].values == 0,\
+                                    pltDF["med_tec"].values)
+                    tecPlot = ax[i, j].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
+                                    cmap=cmap, vmin=0, vmax=20)
+                    titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
+                    ax[i, j].set_title(titleStr, fontsize=8)
                 pltCntr += 1
 
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+        cbar = fig.colorbar(tecPlot, cax=cbar_ax)
+        cbar.set_label('TEC Units')
+        fig.savefig(figName, bbox_inches='tight')
 
 
 if __name__ == "__main__":
     modelName = "model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464_values"
     baseModelDir = "/sd-data/DeepPredTEC/ModelValidation/"
     timeRange = [ datetime.datetime(2015,3,5), datetime.datetime(2015,3,6) ]
-    timeInt = 3 # hours
+    timeInt = 2 # hours
     dpObj = DatePlots(baseModelDir, modelName, timeRange, timeInt)
-    figName = "/home/bharat/Desktop/marc-examples/t/pred-plots.pdf"
-    dpObj.plot_data(figName)
+    figName = "/home/bharat/Desktop/marc-examples/t/true-plots.pdf"
+    dpObj.plot_data(figName, pltType="true", nCols=4)
