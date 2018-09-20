@@ -14,7 +14,8 @@ class ModValTSLat(object):
     to test the accuracy of the model.
     """
     def __init__(self, baseModelDir, modelName, trueTecBaseDir,\
-             timeRange=None, latBinSize=10, mlonRange=None):
+             timeRange=None, latBinSize=10, mlonRange=None, useMask=True,\
+             maskFile="../WeightMatrix/w2_mask-2011-2013-80perc.npy"):
         """
         baseModelDir : parent dir where all models are stored
         modelName : name of the model being tested
@@ -38,6 +39,10 @@ class ModValTSLat(object):
                 "End Time minute should end with 0 or 5."
         self.latBinSize = latBinSize
         self.mlonRange = mlonRange
+        self.useMask= useMask
+        # if masking is set to true read the mask file
+        if self.useMask :
+            self.maskMat = numpy.load(maskFile)
         self.tecModelDict = {}
         self.tecTrueDict = {}
 
@@ -221,7 +226,7 @@ class ModValTSLat(object):
     def generate_ts_plots(self, figName, downCastDF=True,\
              remove_neg_tec_rows=True, legenNcols=4,\
              lgndFontSize='x-small', modelType="deep",\
-              statType="median", errLatRange=[30,70]):
+              statType="median", errLatRange=None):
         """
         Generate plots based on the input conditions
         (1) remove_neg_tec_rows : remove all the rows where tec 
@@ -403,10 +408,10 @@ class ModValTSLat(object):
         trueTECDF["med_tec"] = trueTECDF["med_tec"].astype(numpy.float16)
         # remove all rows where TEC values are negative
         if remove_neg_tec_rows:
-            predTECDF.loc[(predTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            predTECDF.loc[(predTECDF['med_tec'] <= 0), 'med_tec']=numpy.nan
             predTECDF = predTECDF.dropna()
             # same true tec df
-            trueTECDF.loc[(trueTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            trueTECDF.loc[(trueTECDF['med_tec'] <= 0), 'med_tec']=numpy.nan
             trueTECDF = trueTECDF.dropna()
         if self.mlonRange is not None:
             pretTECDF = pretTECDF[ (\
@@ -438,6 +443,7 @@ class ModValTSLat(object):
             mBinPredDF = predTECDF[ [ "mlat_bins", "date", "med_tec" ]\
                          ].groupby(["mlat_bins", "date"] ).mean().reset_index()
             mBinPredDF.columns = [ "mlat_bins", "date", "mean_pred_tec" ]
+
             # True DF
             mBinTrueDF = trueTECDF[ [ "mlat_bins", "date", "med_tec" ]\
                          ].groupby(["mlat_bins", "date"]).mean().reset_index()
@@ -456,7 +462,7 @@ class ModValTSLat(object):
         mBinTrueDF["abs_mean_tec_err"] = numpy.abs(\
                  mBinTrueDF["mean_pred_tec"] - mBinTrueDF["mean_true_tec"] )
         mBinTrueDF["rel_mean_tec_err"] = \
-                mBinTrueDF["abs_mean_tec_err"]/mBinTrueDF["mean_true_tec"]
+                mBinTrueDF["abs_mean_tec_err"]/mBinTrueDF["mean_true_tec"]        
         # set seaborn styling
         sns.set_style("whitegrid")
         # sns.set_context("poster")
@@ -490,9 +496,15 @@ class ModValTSLat(object):
         Load a correponding TEC file into the dict
         """
         if fType == "pred":
-            self.tecModelDict[currDate] = numpy.load(fName)
+            if self.useMask :
+                self.tecModelDict[currDate] = numpy.load(fName) * self.maskMat
+            else:
+                self.tecModelDict[currDate] = numpy.load(fName)
         else:
-            self.tecTrueDict[currDate] = numpy.load(fName)
+            if self.useMask :
+                self.tecTrueDict[currDate] = numpy.load(fName) * self.maskMat
+            else:
+                self.tecTrueDict[currDate] = numpy.load(fName)
 
 if __name__ == "__main__":
 

@@ -231,7 +231,7 @@ class DatePlots(object):
         
     def plot_cmpr_mod(self, figName, cmap="jet",\
                     refInpDir="/sd-data/med_filt_tec/",\
-                    refFileDate=datetime.datetime(2015,1,1)):
+                    refFileDate=datetime.datetime(2015,1,1), fontsize=12):
         """
         Plot the data!
         nCols : number of columns in the plot grid.
@@ -270,7 +270,7 @@ class DatePlots(object):
         nRows = len( tecDictKeys )
         # Now set the plot
         sns.set_style("whitegrid")
-        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row')
+        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(11,11))
         # plot the data
         for _r in range(nRows):
             _tk = tecDictKeys[_r]
@@ -291,7 +291,7 @@ class DatePlots(object):
             tecPlot = ax[_r, 0].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
-                ax[_r, 0].set_title("STResNet", fontsize=6)
+                ax[_r, 0].set_title("STResNet", fontsize=fontsize)
             # plot true tec
             dfRef[dfRef.columns] = self.tecTrueDict[_tk]
             # unpivot the DF
@@ -310,10 +310,10 @@ class DatePlots(object):
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
                 titleStr = _tk.strftime("%Y%m%d-%H%M") + " UT \nActual"
-                ax[_r, 1].set_title(titleStr, fontsize=6)
+                ax[_r, 1].set_title(titleStr, fontsize=fontsize)
             else:
                 titleStr = _tk.strftime("%H%M") + "UT"
-                ax[_r, 1].set_title(titleStr, fontsize=6, y=0.85)
+                ax[_r, 1].set_title(titleStr, fontsize=fontsize, y=0.85)
             # plot baseline pred
             dfRef[dfRef.columns] = self.tecBaselineDict[_tk]
             # unpivot the DF
@@ -331,10 +331,11 @@ class DatePlots(object):
             tecPlot = ax[_r, 2].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
-                ax[_r, 2].set_title("Baseline", fontsize=6)
-            # set tick param
+                ax[_r, 2].set_title("Baseline", fontsize=fontsize)
+            # set label size and aspect ratio for each axes
             for _i in range(3):
-                ax[_r,_i].tick_params(labelsize=6)
+                ax[_r,_i].tick_params(labelsize=fontsize)
+                ax[_r, _i].set_aspect('equal', 'datalim')
 
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
