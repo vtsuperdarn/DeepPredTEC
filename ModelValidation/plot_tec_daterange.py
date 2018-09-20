@@ -191,8 +191,12 @@ class DatePlots(object):
                                     pltDF["med_tec"].values)
                     tecPlot = ax[i, j].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                                     cmap=cmap, vmin=0, vmax=20)
-                    titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
-                    ax[i, j].set_title(titleStr, fontsize=8)
+                    if ( (i == 0) & (j == 0) ):
+                        titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
+                    else:
+                        titleStr = _tk.strftime("%H%M") + "UT"
+                    ax[i, j].set_title(titleStr, fontsize=6)
+                    ax[i, j].tick_params(labelsize=6)
                 else:
                     # replace the values of dfRef with the tec data
                     _tk = tecDictKeys[pltCntr]
@@ -211,8 +215,12 @@ class DatePlots(object):
                                     pltDF["med_tec"].values)
                     tecPlot = ax[i, j].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                                     cmap=cmap, vmin=0, vmax=20)
-                    titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
-                    ax[i, j].set_title(titleStr, fontsize=8)
+                    if ( (i == 0) & (j == 0) ):
+                        titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
+                    else:
+                        titleStr = _tk.strftime("%H%M") + "UT"
+                    ax[i, j].set_title(titleStr, fontsize=6)
+                    ax[i, j].tick_params(labelsize=6)
                 pltCntr += 1
 
         fig.subplots_adjust(right=0.8)
@@ -283,7 +291,7 @@ class DatePlots(object):
             tecPlot = ax[_r, 0].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
-                ax[_r, 0].set_title("STResNet", fontsize=8)
+                ax[_r, 0].set_title("STResNet", fontsize=6)
             # plot true tec
             dfRef[dfRef.columns] = self.tecTrueDict[_tk]
             # unpivot the DF
@@ -301,11 +309,11 @@ class DatePlots(object):
             tecPlot = ax[_r, 1].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
-                titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT (TRUE)"
-                ax[_r, 1].set_title(titleStr, fontsize=8)
-            else:
-                titleStr = _tk.strftime("%Y%m%d-%H%M") + "UT"
+                titleStr = _tk.strftime("%Y%m%d-%H%M") + " UT \nActual"
                 ax[_r, 1].set_title(titleStr, fontsize=6)
+            else:
+                titleStr = _tk.strftime("%H%M") + "UT"
+                ax[_r, 1].set_title(titleStr, fontsize=6, y=0.85)
             # plot baseline pred
             dfRef[dfRef.columns] = self.tecBaselineDict[_tk]
             # unpivot the DF
@@ -323,7 +331,10 @@ class DatePlots(object):
             tecPlot = ax[_r, 2].pcolormesh(mlonCntr.T , mlatCntr.T, cntVals,\
                             cmap=cmap, vmin=0, vmax=20)
             if _r == 0:
-                ax[_r, 2].set_title("Baseline", fontsize=8)
+                ax[_r, 2].set_title("Baseline", fontsize=6)
+            # set tick param
+            for _i in range(3):
+                ax[_r,_i].tick_params(labelsize=6)
 
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
