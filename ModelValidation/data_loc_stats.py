@@ -127,7 +127,7 @@ class LocDataPnts(object):
         Given a mask filename plot the data
         """
         # Read data from the mask file
-        maskMat = numpy.load(maskFName).transpose()
+        maskMat = numpy.load(maskFName)
         # now we need to convert this to a DF for plotting
         # read a dummy tec file into pandas DF to convert the numpy
         # files into a DF with appropriate columns
