@@ -132,7 +132,7 @@ def main():
     base_model = "previous_day"
     mask_tec = True
     mask_matrix = np.load("../WeightMatrix/mask-2011-2013-80perc.npy")
-    mask_matrix = np.logical_not(mask_matrix.T).astype(int)
+    mask_matrix = np.logical_not(mask_matrix).astype(int)
 
 #    model = "STResNet"
 #    err_types = ["Relative Average Absolute Error",

@@ -18,6 +18,7 @@ import os
 import shutil
 import numpy
 import time
+import glob
 from omn_utils import OmnData
 from batch_utils import BatchDateUtils, TECUtils
 
@@ -25,20 +26,18 @@ from batch_utils import BatchDateUtils, TECUtils
 test_batch_size = 1
 
 # Set the test period
-param.start_date = datetime.datetime(2015, 3, 1)
-param.end_date = datetime.datetime(2015, 5, 1)
+param.start_date = dt.datetime(2015, 3, 1)
+param.end_date = dt.datetime(2015, 4, 1)
 
-# Select the model
-#saved_model = '/current' # for loading the final saved model
-#saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
-saved_model = '/epoch_33' #'/epoch_X', for loading the model saved at X epoch
-
+# Select the model folder and model epock
 #saved_model_path = "" #enter the model name for getting the prediction, eg. "model_batch8_epoch1_resnet10_nresfltr12_nfltr12_of1_otec12_cf1_csl12_pf12_psl24_tf36_tsl8_gs32_ks55_exoT_nrmT_1.250402212
-#saved_model_path = "model_batch64_epoch100_resnet50_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_314.27797746658325"
-#saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl48_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_323.49480175971985"
-#saved_model_path = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-#saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
-saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464"
+#param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717"
+#param.saved_model = '/epoch_24' #'/epoch_X', for loading the model saved at X epoch
+
+param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464"
+param.saved_model = '/epoch_33' #'/epoch_X', for loading the model saved at X epoch
+
+#param.saved_model = '/current' # for loading the final saved model
 
 # Extract hyperparameter values from saved_model_path
 param_values = param.saved_model_path.split("/")[-1].split("_")
@@ -62,8 +61,8 @@ exo = [x.replace("exo", "") for x in param_values if x.startswith("exo")][0]
 nrm = [x.replace("nrm", "") for x in param_values if x.startswith("nrm")][0]
 weight_num = [x for x in param_values if x.startswith("w")]
 if weight_num:
-    param.weight_file = weight_num[0] + "_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
-    param.loss_weight_matrix = param.weight_dir + param.weight_file
+    #param.weight_file = weight_num[0] + "_mlat_45-70_1.0_mlat_80-90_1.0_mlon_None.npy"
+    param.loss_weight_matrix = glob.glob(os.path.join(param.weight_dir, weight_num[0] + "*"))[0]
 else:
     pass
 if exo == "T":

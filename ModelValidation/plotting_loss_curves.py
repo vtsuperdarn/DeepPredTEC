@@ -6,6 +6,8 @@ from params import Params as param
 #print ("Enter the model_path_values name:")
 #model_path = raw_input()
 
+param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr6_nfltr12_of2_otec6_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_314.8617606163025"
+
 model_path = param.saved_model_path + "_values"
 
 train_loss = np.load(model_path+'/training_loss.npy').tolist()
