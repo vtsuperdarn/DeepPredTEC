@@ -270,7 +270,7 @@ class DatePlots(object):
         nRows = len( tecDictKeys )
         # Now set the plot
         sns.set_style("whitegrid")
-        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(11,11))
+        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(8,11))
         # plot the data
         for _r in range(nRows):
             _tk = tecDictKeys[_r]
@@ -313,7 +313,7 @@ class DatePlots(object):
                 ax[_r, 1].set_title(titleStr, fontsize=fontsize)
             else:
                 titleStr = _tk.strftime("%H%M") + "UT"
-                ax[_r, 1].set_title(titleStr, fontsize=fontsize, y=0.85)
+                ax[_r, 1].set_title(titleStr, fontsize=fontsize)
             # plot baseline pred
             dfRef[dfRef.columns] = self.tecBaselineDict[_tk]
             # unpivot the DF
@@ -335,7 +335,8 @@ class DatePlots(object):
             # set label size and aspect ratio for each axes
             for _i in range(3):
                 ax[_r,_i].tick_params(labelsize=fontsize)
-                ax[_r, _i].set_aspect('equal', 'datalim')
+                # ax[_r, _i].set_aspect('equal', 'datalim')
+                ax[_r, _i].set_ylim([15, 90])
 
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
