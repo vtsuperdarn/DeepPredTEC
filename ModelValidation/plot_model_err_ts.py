@@ -3,6 +3,7 @@ import pandas
 import numpy
 import dask
 import glob
+import feather
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
@@ -31,6 +32,7 @@ class ModPerfTS(object):
         mlonRange : range of mlons over which TEC values are averaged
                     If set to None all MLONs are used.
         """
+        self.modelName = modelName
         self.modelDir = baseModelDir + modelName + "/" + "predicted_tec/"
         self.modelDurtn = modelDurtn # hours
         self.predStrtMinute = predStrtMinute
@@ -228,9 +230,10 @@ class ModPerfTS(object):
         return (predTECDF, trueTECDF)
 
     def get_model_err_ts(self, downCastDF=True,\
-             remove_neg_tec_rows=True, legenNcols=4,\
-             lgndFontSize='x-small', modelType="deep",\
-              statType="median", errLatRange=None):
+             remove_neg_tec_rows=True, modelType="deep",\
+              statType="median", errLatRange=None, \
+              saveErrStatDF=True, errStatDir="../ErrorStats/",\
+               plotErrDist=True):
         """
         Generate mean and std in rel err as
         a time series in model pred
@@ -295,6 +298,10 @@ class ModPerfTS(object):
                              ].reset_index(drop=True)
         trueTECDF["rel_tec_err"] = \
                 trueTECDF["abs_tec_err"]/trueTECDF["true_tec"]
+
+        # plot prediction df
+        if plotErrDist:
+            self.plot_err_dist(trueTECDF)
         # Drop NaNs
         trueTECDF.dropna(inplace=True)
         # get the first prediction time!
@@ -351,17 +358,22 @@ class ModPerfTS(object):
         # merge both median/mean and std DFs
         errStatDF = pandas.merge( errStatDF, errStdDF,\
                                  on=["pred_minute"] )
-        # We need to make a plot of minutes from
+        # save the data (it takes a long time to calculate)
+        if saveErrStatDF:
+            errStatDF.to_csv(errStatDir + self.modelName + ".csv")
         return errStatDF
         
     def generate_ts_plots(self, figName, downCastDF=True,\
-             remove_neg_tec_rows=True, legenNcols=4,\
+             remove_neg_tec_rows=True, errStatDir="./",\
              lgndFontSize='x-small', modelType="deep",\
               statType="median", errLatRange=None):
         """
         Generate mean and std relative error plots
         """
-        errStatDF = self.get_model_err_ts()
+        errStatDF = self.get_model_err_ts(downCastDF=downCastDF,\
+             remove_neg_tec_rows=remove_neg_tec_rows,\
+             errStatDir=errStatDir, modelType=modelType,\
+              statType=statType, errLatRange=errLatRange)
         # set seaborn styling
         sns.set_style("whitegrid")
         # set the fig!
@@ -375,6 +387,27 @@ class ModPerfTS(object):
         ax.set_ylabel("Relative Error", fontsize=14)
         ax.set_xlabel("Minutes from Prediction", fontsize=14)
         ax.set_title( str(self.modelDurtn) + "- hour prediction" )
+        plt.tick_params(labelsize=14)
+        f.savefig(figName,bbox_inches='tight')
+
+    def plot_err_dist(self, trueTECDF,\
+         figDir="/home/bharat/Desktop/tecMod/"):
+        """
+        Generate error dist plots
+        """
+        # get figname
+        figName = figDir + "dist-" + str(self.modelDurtn) + ".pdf"
+        # set seaborn styling
+        sns.set_style("whitegrid")
+        # set the fig!
+        f = plt.figure(figsize=(12, 8))
+        ax = f.add_subplot(1,1,1)
+        n, bins, patches = plt.hist(trueTECDF["rel_tec_err"].values,\
+                            bins='auto', color='#0504aa',
+                            alpha=0.7, rwidth=0.85)
+        plt.grid(axis='y', alpha=0.75)
+        plt.xlabel('Relative TEC Error')
+        plt.ylabel('Frequency')
         plt.tick_params(labelsize=14)
         f.savefig(figName,bbox_inches='tight')
         
