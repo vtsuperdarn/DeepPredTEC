@@ -13,8 +13,8 @@ class ModPerfTS(object):
     a timeseries plot of average TEC value binned by latitude,
     to test the accuracy of the model.
     """
-    def __init__(self, baseModelDir, modelName, modelDurtn, predStrtMinute=0,\
-                 trueTecBaseDir, timeRange=None, latBinSize=10,\
+    def __init__(self, baseModelDir, modelName, modelDurtn, trueTecBaseDir,\
+                 predStrtMinute=10, timeRange=None, latBinSize=10,\
                  mlonRange=None, useMask=True,\
                  maskFile="../WeightMatrix/w2_mask-2011-2013-80perc.npy"):
         """
@@ -32,7 +32,7 @@ class ModPerfTS(object):
                     If set to None all MLONs are used.
         """
         self.modelDir = baseModelDir + modelName + "/" + "predicted_tec/"
-        self.modelDurtn = modelDurtn
+        self.modelDurtn = modelDurtn # hours
         self.predStrtMinute = predStrtMinute
         self.trueTecBaseDir = trueTecBaseDir
         self.timeRange = timeRange
@@ -227,12 +227,13 @@ class ModPerfTS(object):
                         "date").reset_index(drop=True)
         return (predTECDF, trueTECDF)
 
-    def generate_ts_plots(self, figName, downCastDF=True,\
+    def get_model_err_ts(self, downCastDF=True,\
              remove_neg_tec_rows=True, legenNcols=4,\
              lgndFontSize='x-small', modelType="deep",\
               statType="median", errLatRange=None):
         """
-        Generate plots based on the input conditions
+        Generate mean and std in rel err as
+        a time series in model pred
         (1) remove_neg_tec_rows : remove all the rows where tec 
                                   values are negative!
         """
@@ -289,16 +290,104 @@ class ModPerfTS(object):
                                      "Mlon", "mlat_bins"] )
         trueTECDF["abs_tec_err"] = numpy.abs(\
                  trueTECDF["pred_tec"] - trueTECDF["true_tec"] )
+        trueTECDF = trueTECDF[ (trueTECDF["abs_tec_err"] > 0.) &\
+                             (trueTECDF["true_tec"] > 0.) \
+                             ].reset_index(drop=True)
         trueTECDF["rel_tec_err"] = \
                 trueTECDF["abs_tec_err"]/trueTECDF["true_tec"]
         # Drop NaNs
         trueTECDF.dropna(inplace=True)
-        trueTECDF["hour"] = [ x.hour for x\
-                                 in trueTECDF["date"] ]
-        trueTECDF["minute"] = [ x.dayofyear for x\
-                               in trueTECDF["date"] ]
+        # get the first prediction time!
+        minTECDt64 = trueTECDF["date"].min()
+        # this is in numpy datetime64, convert
+        # to datetime object
+        minTECTS64 = (minTECDt64 - \
+              numpy.datetime64('1970-01-01T00:00:00Z')\
+             ) / numpy.timedelta64(1, 's')
+        minTECDate = datetime.datetime.utcfromtimestamp(\
+                                        minTECTS64)
+        # then we'll go to the next hour, else
+        if minTECDate.minute == self.predStrtMinute:
+            firstPredTime = minTECDate
+        elif minTECDate.minute < self.predStrtMinute:
+            firstPredTime = datetime.datetime(minTECDate.year,\
+                                minTECDate.month, minTECDate.day,\
+                                minTECDate.hour, self.predStrtMinute)
+        else:
+            firstPredTime = datetime.datetime(minTECDate.year,\
+                                minTECDate.month, minTECDate.day,\
+                                minTECDate.hour + 1, self.predStrtMinute)
+        # only limit trueTECDF to timeperiods greater than firstPredTime
+        trueTECDF = trueTECDF[ trueTECDF["date"] >= firstPredTime\
+                             ].reset_index(drop=True)
+        # get prediction minutes
+        trueTECDF["pred_minute"] = trueTECDF.apply(\
+                                       self.get_minutes_from_prediction,\
+                                       args=(firstPredTime,), axis=1)
+        # get time bins of predictions, i.e., 
+        # if prediction duration is 4 hours divide hours
+        # into bins 0-4, 4-8, 8-12 and so on...
+        trueTECDF["binned_hours"] = [\
+                    int(x.hour/self.modelDurtn)*self.modelDurtn for x\
+                    in trueTECDF["date"] ]
+        trueTECDF = trueTECDF.dropna().reset_index(drop=True)
+        # Now groupby minutes from prediction and get mean and std errs
+        if statType == "median":
+            errStatDF = trueTECDF[ ["rel_tec_err", "pred_minute"]\
+                                ].groupby(["pred_minute"]\
+                                         ).median().reset_index()
+            errStatDF = errStatDF.dropna().reset_index(drop=True)
+            errStatDF.columns = [ "pred_minute", "mean_rel_err" ]
+        else:
+            errStatDF = trueTECDF[ ["rel_tec_err", "pred_minute"]\
+                                ].groupby(["pred_minute"]\
+                                         ).mean().reset_index()
+            errStatDF = errStatDF.dropna().reset_index(drop=True)
+            errStatDF.columns = [ "pred_minute", "mean_rel_err" ]
+        errStdDF = trueTECDF[ ["rel_tec_err", "pred_minute"]\
+                                ].groupby(["pred_minute"]\
+                                         ).std().reset_index()
+        errStdDF.columns = [ "pred_minute", "std_rel_err" ]
+        # merge both median/mean and std DFs
+        errStatDF = pandas.merge( errStatDF, errStdDF,\
+                                 on=["pred_minute"] )
         # We need to make a plot of minutes from
-        print trueTECDF.head()
+        return errStatDF
+        
+    def generate_ts_plots(self, figName, downCastDF=True,\
+             remove_neg_tec_rows=True, legenNcols=4,\
+             lgndFontSize='x-small', modelType="deep",\
+              statType="median", errLatRange=None):
+        """
+        Generate mean and std relative error plots
+        """
+        errStatDF = self.get_model_err_ts()
+        # set seaborn styling
+        sns.set_style("whitegrid")
+        # set the fig!
+        f = plt.figure(figsize=(12, 8))
+        ax = f.add_subplot(1,1,1)
+        ax.scatter(errStatDF['pred_minute'], errStatDF['mean_rel_err'],\
+            marker='o', color='firebrick', alpha=0.7, s = 124)
+        ax.errorbar(errStatDF['pred_minute'], errStatDF['mean_rel_err'],\
+             yerr=errStatDF['std_rel_err'],  color='firebrick', label='',\
+            capthick=2., capsize=5., fmt='o')
+        ax.set_ylabel("Relative Error", fontsize=14)
+        ax.set_xlabel("Minutes from Prediction", fontsize=14)
+        ax.set_title( str(self.modelDurtn) + "- hour prediction" )
+        plt.tick_params(labelsize=14)
+        f.savefig(figName,bbox_inches='tight')
+        
+    def get_minutes_from_prediction(self, row, firstPredTime):
+        """
+        Given relative TEC error at different times
+        estimate the minutes from first prediction.
+        In other words, if a 2-hour prediction starts
+        at 0 UT, then 0-2 UT would be 0-120 minutes, 
+        2-4 UT would be another 0-120 minutes and so on.
+        """
+        return ((row["date"] - firstPredTime\
+                    ).total_seconds()/60.)%(self.modelDurtn*60.)
     
     def load_npy_file(self, currDate, fName, fType):
         """
@@ -326,5 +415,3 @@ if __name__ == "__main__":
              trueTecBaseDir, timeRange=timeRange)
     figName = "/home/bharat/Desktop/marc-examples/t/mod-err.pdf"
     tsObj.generate_ts_plots(figName)
-
-
