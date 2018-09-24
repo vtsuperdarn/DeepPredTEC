@@ -397,15 +397,15 @@ class ModPerfTS(object):
         """
         # get figname
         figName = figDir + "dist-" + str(self.modelDurtn) + ".pdf"
-        # set seaborn styling
+        # set plot styling
         sns.set_style("whitegrid")
+        plt.style.use("fivethirtyeight")
         # set the fig!
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
-        n, bins, patches = plt.hist(trueTECDF["rel_tec_err"].values,\
-                            bins='auto', color='#0504aa',
-                            alpha=0.7, rwidth=0.85)
-        plt.grid(axis='y', alpha=0.75)
+        bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
+        ax.hist(trueTECDF["rel_tec_err"].values,\
+                            bins=bins, log=True)
         plt.xlabel('Relative TEC Error')
         plt.ylabel('Frequency')
         plt.tick_params(labelsize=14)
