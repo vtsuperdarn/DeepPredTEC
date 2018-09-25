@@ -229,11 +229,77 @@ class ModPerfTS(object):
                         "date").reset_index(drop=True)
         return (predTECDF, trueTECDF)
 
+    def get_err_data(self, remove_neg_tec_rows=True, modelType="deep"):
+        """
+        Generate mean and std in rel err as
+        a time series in model pred
+        (1) remove_neg_tec_rows : remove all the rows where tec 
+                                  values are negative!
+        """
+        if modelType == "deep":
+            (predTECDF, trueTECDF) = self.read_dl_model_true_data()
+        else:
+            (predTECDF, trueTECDF) = self.read_baseline_model_true_data()
+        # Downcast Mlon, Mlat and med_tec to float16's, this way
+        # we reduce the space occupied by the DF by almost 1/2
+        predTECDF["Mlon"] = predTECDF["Mlon"].astype(numpy.float16)
+        predTECDF["Mlat"] = predTECDF["Mlat"].astype(numpy.float16)
+        predTECDF["med_tec"] = predTECDF["med_tec"].astype(numpy.float16)
+        # Same for True TEC DF
+        trueTECDF["Mlon"] = trueTECDF["Mlon"].astype(numpy.float16)
+        trueTECDF["Mlat"] = trueTECDF["Mlat"].astype(numpy.float16)
+        trueTECDF["med_tec"] = trueTECDF["med_tec"].astype(numpy.float16)
+        # remove all rows where TEC values are negative
+        if remove_neg_tec_rows:
+            predTECDF.loc[(predTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            predTECDF = predTECDF.dropna()
+            # same true tec df
+            trueTECDF.loc[(trueTECDF['med_tec'] < 0), 'med_tec']=numpy.nan
+            trueTECDF = trueTECDF.dropna()
+        if self.mlonRange is not None:
+            pretTECDF = pretTECDF[ (\
+                     pretTECDF["Mlon"] >= self.mlonRange[0] ) &\
+                     (pretTECDF["Mlon"] <= self.mlonRange[1] ) ]
+            # same for true df
+            trueTECDF = trueTECDF[ (\
+                     trueTECDF["Mlon"] >= self.mlonRange[0] ) &\
+                     (trueTECDF["Mlon"] <= self.mlonRange[1] ) ]
+        # Divide the Mlats in the DF into bins
+        minLat = int(self.latBinSize * round(\
+                    predTECDF["Mlat"].min()/self.latBinSize))
+        maxLat = int(self.latBinSize * round(\
+                    predTECDF["Mlat"].max()/self.latBinSize))
+        latBins = range(minLat, maxLat + self.latBinSize, self.latBinSize)
+        colList = predTECDF.columns
+        predTECDF = pandas.concat( [ predTECDF, \
+                            pandas.cut( predTECDF["Mlat"], \
+                                       bins=latBins ) ], axis=1 )
+        predTECDF.columns = list(colList) + ["mlat_bins"]
+        predTECDF.rename(columns={'med_tec': 'pred_tec'},\
+                         inplace=True)
+        # same for true tec df
+        trueTECDF = pandas.concat( [ trueTECDF, \
+                            pandas.cut( trueTECDF["Mlat"], \
+                                       bins=latBins ) ], axis=1 )
+        trueTECDF.columns = list(colList) + ["mlat_bins"]
+        trueTECDF.rename(columns={'med_tec': 'true_tec'},\
+                         inplace=True)
+        trueTECDF = pandas.merge( trueTECDF, predTECDF,\
+                                 on=["date", "Mlat",\
+                                     "Mlon", "mlat_bins"] )
+        trueTECDF["abs_tec_err"] = numpy.abs(\
+                 trueTECDF["pred_tec"] - trueTECDF["true_tec"] )
+        trueTECDF = trueTECDF[ (trueTECDF["abs_tec_err"] > 0.) &\
+                             (trueTECDF["true_tec"] > 0.) \
+                             ].reset_index(drop=True)
+        trueTECDF["rel_tec_err"] = \
+                trueTECDF["abs_tec_err"]/trueTECDF["true_tec"]
+        return trueTECDF
+
     def get_model_err_ts(self, downCastDF=True,\
              remove_neg_tec_rows=True, modelType="deep",\
               statType="median", errLatRange=None, \
-              saveErrStatDF=True, errStatDir="../ErrorStats/",\
-               plotErrDist=True):
+              saveErrStatDF=True, errStatDir="../ErrorStats/"):
         """
         Generate mean and std in rel err as
         a time series in model pred
@@ -299,9 +365,6 @@ class ModPerfTS(object):
         trueTECDF["rel_tec_err"] = \
                 trueTECDF["abs_tec_err"]/trueTECDF["true_tec"]
 
-        # plot prediction df
-        if plotErrDist:
-            self.plot_err_dist(trueTECDF)
         # Drop NaNs
         trueTECDF.dropna(inplace=True)
         # get the first prediction time!
@@ -390,26 +453,69 @@ class ModPerfTS(object):
         plt.tick_params(labelsize=14)
         f.savefig(figName,bbox_inches='tight')
 
-    def plot_err_dist(self, trueTECDF,\
-         figDir="/home/bharat/Desktop/tecMod/"):
+    def generate_err_dist_plot(self, figName, overlayQuartiles=True,\
+                        pltErr="relative", lowerPercentile=10,\
+                        upperPercentile=90):
         """
         Generate error dist plots
         """
-        # get figname
-        figName = figDir + "dist-" + str(self.modelDurtn) + ".pdf"
+        # get the error data
+        trueTECDF = self.get_err_data()
+        if pltErr == "relative":
+            errArr = trueTECDF["rel_tec_err"].values
+            xLabel = 'Relative TEC Error'
+        else:
+            errArr = trueTECDF["abs_tec_err"].values
+            xLabel = 'Absolute TEC Error'
+        # get the quartiles
+        median, quar1, quar3 = numpy.percentile(errArr, 50),\
+            numpy.percentile(errArr, lowerPercentile),\
+             numpy.percentile(errArr, upperPercentile)
+        print "quar1, median, quar3 : ", quar1, median, quar3
         # set plot styling
         sns.set_style("whitegrid")
         plt.style.use("fivethirtyeight")
         # set the fig!
+        # f, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
         bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
-        ax.hist(trueTECDF["rel_tec_err"].values,\
-                            bins=bins, log=True)
-        plt.xlabel('Relative TEC Error')
+        # to overlay the quartiles get the freq at different bins
+        errFreq, errBins= numpy.histogram(errArr, bins=bins)
+        # Get the freq to plot
+        plotFreqArr = [ numpy.percentile(errFreq, 90),\
+                 numpy.percentile(errFreq, 100) ]
+        plotFreqMed = numpy.percentile(errFreq, 95)
+        # plot the hist
+        ax.hist(errArr, bins=bins, log=True)
+        # Plot the percentile ranges
+        # lower percentile
+        ax.plot( [quar1, quar1], plotFreqArr, color="#fc4f30" )
+        # upper percentile
+        ax.plot( [quar3, quar3], plotFreqArr, color="#fc4f30" )
+        # Mark the range
+        ax.annotate(s='', xy=(quar3,plotFreqMed),\
+                     xytext=(quar1,plotFreqMed),\
+                    arrowprops=dict(arrowstyle='<->',color='#fc4f30',
+                             lw=1.5,
+                             ls='--'))
+        # Plot the quartiles in a text box
+        quar1Txt = str(lowerPercentile) + "th percentile"
+        quar3Txt = str(upperPercentile) + "th percentile"
+        textstr = '\n'.join((
+                    quar1Txt + '$=%.2f$' % (quar1, ),
+                    r'$\mathrm{median}=%.2f$' % (median, ),
+                    quar3Txt + '$=%.2f$' % (quar3, )))
+        # place a text box in upper right in axes coords
+        # these are matplotlib.patch.Patch properties
+        props = dict(boxstyle='round', alpha=0.5)
+        ax.text(0.65, 0.95, textstr, transform=ax.transAxes,\
+                 fontsize=14, verticalalignment='top', bbox=props)
+        # Labeling
+        plt.xlabel(xLabel)
         plt.ylabel('Frequency')
         plt.tick_params(labelsize=14)
-        f.savefig(figName,bbox_inches='tight')
+        f.savefig(figName, bbox_inches='tight')
         
     def get_minutes_from_prediction(self, row, firstPredTime):
         """
