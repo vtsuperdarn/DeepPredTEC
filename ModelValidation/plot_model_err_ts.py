@@ -479,15 +479,16 @@ class ModPerfTS(object):
         # f, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
-        bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
+        # bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
+        bins = [ 0, 0.1, 0.2, 0.5, 1. ]
         # to overlay the quartiles get the freq at different bins
         errFreq, errBins= numpy.histogram(errArr, bins=bins)
         # Get the freq to plot
-        plotFreqArr = [ numpy.percentile(errFreq, 90),\
-                 numpy.percentile(errFreq, 100) ]
-        plotFreqMed = numpy.percentile(errFreq, 95)
+        plotFreqArr = [ numpy.percentile(errFreq, 40),\
+                 numpy.percentile(errFreq, 60) ]
+        plotFreqMed = numpy.percentile(errFreq, 50)
         # plot the hist
-        ax.hist(errArr, bins=bins, log=True)
+        ax.hist(errArr, bins=bins)
         # Plot the percentile ranges
         # lower percentile
         ax.plot( [quar1, quar1], plotFreqArr, color="#fc4f30" )
@@ -497,7 +498,7 @@ class ModPerfTS(object):
         ax.annotate(s='', xy=(quar3,plotFreqMed),\
                      xytext=(quar1,plotFreqMed),\
                     arrowprops=dict(arrowstyle='<->',color='#fc4f30',
-                             lw=1.5,
+                             lw=2.5,
                              ls='--'))
         # Plot the quartiles in a text box
         quar1Txt = str(lowerPercentile) + "th percentile"
@@ -511,6 +512,7 @@ class ModPerfTS(object):
         props = dict(boxstyle='round', alpha=0.5)
         ax.text(0.65, 0.95, textstr, transform=ax.transAxes,\
                  fontsize=14, verticalalignment='top', bbox=props)
+        ax.set_xticks(numpy.arange(0,1,0.1))
         # Labeling
         plt.xlabel(xLabel)
         plt.ylabel('Frequency')
