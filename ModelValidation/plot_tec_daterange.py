@@ -229,7 +229,7 @@ class DatePlots(object):
         cbar.set_label('TEC Units')
         fig.savefig(figName, bbox_inches='tight')
         
-    def plot_cmpr_mod(self, figName, cmap="jet",\
+    def plot_cmpr_mod(self, figName, cmap="viridis",\
                     refInpDir="/sd-data/med_filt_tec/",\
                     refFileDate=datetime.datetime(2015,1,1), fontsize=12):
         """
@@ -268,9 +268,10 @@ class DatePlots(object):
         # and decide the no.of rows accordingly!
         nCols = 3
         nRows = len( tecDictKeys )
-        # Now set the plot
+        # Now set the plot style
         sns.set_style("whitegrid")
-        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(11,11))
+        plt.style.use("fivethirtyeight")
+        fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(8,11))
         # plot the data
         for _r in range(nRows):
             _tk = tecDictKeys[_r]
@@ -313,7 +314,7 @@ class DatePlots(object):
                 ax[_r, 1].set_title(titleStr, fontsize=fontsize)
             else:
                 titleStr = _tk.strftime("%H%M") + "UT"
-                ax[_r, 1].set_title(titleStr, fontsize=fontsize, y=0.85)
+                ax[_r, 1].set_title(titleStr, fontsize=fontsize)
             # plot baseline pred
             dfRef[dfRef.columns] = self.tecBaselineDict[_tk]
             # unpivot the DF
@@ -335,7 +336,9 @@ class DatePlots(object):
             # set label size and aspect ratio for each axes
             for _i in range(3):
                 ax[_r,_i].tick_params(labelsize=fontsize)
-                ax[_r, _i].set_aspect('equal', 'datalim')
+                # ax[_r, _i].set_aspect('equal', 'datalim')
+                ax[_r, _i].set_ylim([15, 90])
+                ax[_r, _i].grid()
 
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
