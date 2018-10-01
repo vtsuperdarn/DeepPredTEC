@@ -455,10 +455,11 @@ class ModPerfTS(object):
 
     def generate_err_dist_plot(self, figName, overlayQuartiles=True,\
                         pltErr="relative", lowerPercentile=10,\
-                        upperPercentile=90):
+                        upperPercentile=90, pltType="histogram"):
         """
         Generate error dist plots
         """
+        from scipy.stats import gaussian_kde
         # get the error data
         trueTECDF = self.get_err_data()
         if pltErr == "relative":
@@ -471,35 +472,53 @@ class ModPerfTS(object):
         median, quar1, quar3 = numpy.percentile(errArr, 50),\
             numpy.percentile(errArr, lowerPercentile),\
              numpy.percentile(errArr, upperPercentile)
-        print "quar1, median, quar3 : ", quar1, median, quar3
+        # print "quar1, median, quar3 : ", quar1, median, quar3
         # set plot styling
-        sns.set_style("whitegrid")
+        # sns.set_style("whitegrid")
         plt.style.use("fivethirtyeight")
         # set the fig!
         # f, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
-        # bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
-        bins = [ 0, 0.1, 0.2, 0.5, 1. ]
-        # to overlay the quartiles get the freq at different bins
-        errFreq, errBins= numpy.histogram(errArr, bins=bins)
-        # Get the freq to plot
-        plotFreqArr = [ numpy.percentile(errFreq, 40),\
-                 numpy.percentile(errFreq, 60) ]
-        plotFreqMed = numpy.percentile(errFreq, 50)
-        # plot the hist
-        ax.hist(errArr, bins=bins)
-        # Plot the percentile ranges
-        # lower percentile
-        ax.plot( [quar1, quar1], plotFreqArr, color="#fc4f30" )
-        # upper percentile
-        ax.plot( [quar3, quar3], plotFreqArr, color="#fc4f30" )
-        # Mark the range
-        ax.annotate(s='', xy=(quar3,plotFreqMed),\
-                     xytext=(quar1,plotFreqMed),\
-                    arrowprops=dict(arrowstyle='<->',color='#fc4f30',
-                             lw=2.5,
-                             ls='--'))
+        if pltType == "histogram":
+            # bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
+            bins = [ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1. ]#[ 0, 0.1, 0.2, 0.5, 1. ]
+            # to overlay the quartiles get the freq at different bins
+            errFreq, errBins= numpy.histogram(errArr, bins=bins)
+            # Get the freq to plot
+            plotFreqArr = [ numpy.percentile(errFreq, 40),\
+                     numpy.percentile(errFreq, 60) ]
+            plotFreqMed = numpy.percentile(errFreq, 50)
+            # plot the hist
+            ax.hist(errArr, bins=bins, color="#fc4f30")
+            # Plot the percentile ranges
+            # lower percentile
+            ax.plot( [quar1, quar1], plotFreqArr, color="#008fd5" )
+            # upper percentile
+            ax.plot( [quar3, quar3], plotFreqArr, color="#008fd5" )
+            # Mark the range
+            ax.annotate(s='', xy=(quar3,plotFreqMed),\
+                         xytext=(quar1,plotFreqMed),\
+                        arrowprops=dict(arrowstyle='<->',color='#008fd5',
+                                 lw=2.5,
+                                 ls='--'))
+        else:
+            density = gaussian_kde(errArr)
+            xs = numpy.linspace(0,1,100)
+            # instantiate and fit the KDE model
+            kde = gaussian_kde( errArr, bw_method="scott" )
+            ax.plot( xs, kde(xs), color="#fc4f30" )
+            # Plot the percentile ranges
+            # lower percentile
+            ax.plot( [quar1, quar1], [0.8, 1.2], color="#008fd5" )
+            # upper percentile
+            ax.plot( [quar3, quar3], [0.8, 1.2], color="#008fd5" )
+            # Mark the range
+            ax.annotate(s='', xy=(quar3,1.),\
+                         xytext=(quar1,1.),\
+                        arrowprops=dict(arrowstyle='<->',color='#008fd5',
+                                 lw=2.5,
+                                 ls='--'))
         # Plot the quartiles in a text box
         quar1Txt = str(lowerPercentile) + "th percentile"
         quar3Txt = str(upperPercentile) + "th percentile"
@@ -513,6 +532,7 @@ class ModPerfTS(object):
         ax.text(0.65, 0.95, textstr, transform=ax.transAxes,\
                  fontsize=14, verticalalignment='top', bbox=props)
         ax.set_xticks(numpy.arange(0,1,0.1))
+        ax.set_xlim( [0.,1.] )
         # Labeling
         plt.xlabel(xLabel)
         plt.ylabel('Frequency')
