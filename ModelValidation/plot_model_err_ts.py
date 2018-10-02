@@ -482,15 +482,17 @@ class ModPerfTS(object):
         ax = f.add_subplot(1,1,1)
         if pltType == "histogram":
             # bins = [ 0, 0.2, 0.5, 1., 2., 4, 6., 8., 10. ]
-            bins = [ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1. ]#[ 0, 0.1, 0.2, 0.5, 1. ]
+            bins = numpy.linspace(0,1,100)#[ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1. ]#[ 0, 0.1, 0.2, 0.5, 1. ]
             # to overlay the quartiles get the freq at different bins
             errFreq, errBins= numpy.histogram(errArr, bins=bins)
             # Get the freq to plot
-            plotFreqArr = [ numpy.percentile(errFreq, 40),\
-                     numpy.percentile(errFreq, 60) ]
-            plotFreqMed = numpy.percentile(errFreq, 50)
+            plotFreqArr = [ numpy.percentile(errFreq, 68)/float(len(errArr)),\
+                     numpy.percentile(errFreq, 72)/float(len(errArr)) ]
+            plotFreqMed = numpy.percentile(errFreq, 70)/float(len(errArr))
             # plot the hist
-            ax.hist(errArr, bins=bins, color="#fc4f30")
+            weights = numpy.ones_like(errArr)/float(len(errArr))
+            ax.hist(errArr, bins=bins, color="#fc4f30",\
+                     weights=weights, histtype="bar", lw=2.5, alpha=0.3)
             # Plot the percentile ranges
             # lower percentile
             ax.plot( [quar1, quar1], plotFreqArr, color="#008fd5" )
@@ -535,7 +537,7 @@ class ModPerfTS(object):
         ax.set_xlim( [0.,1.] )
         # Labeling
         plt.xlabel(xLabel)
-        plt.ylabel('Frequency')
+        plt.ylabel('Density')
         plt.tick_params(labelsize=14)
         f.savefig(figName, bbox_inches='tight')
         

@@ -488,7 +488,7 @@ class ModValTSLat(object):
             ax.set_ylabel(" Relative Err.", fontsize=14)
             ax.set_xlabel("MLAT", fontsize=14)
             ax.tick_params(labelsize=14)
-            ax.set_ylim([0, 1.])
+            ax.set_ylim([-0.1, 1.])
             f.savefig(figName,bbox_inches='tight')
 
     
