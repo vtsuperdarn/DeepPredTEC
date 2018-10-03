@@ -115,6 +115,9 @@ def main():
     # Select a model and set the path for predicted TEC map
     #model_value = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_yr_11_13_310.1902163028717_values"
     model_value = "model_batch64_epoch100_resnet100_nresfltr12_nfltr12_of2_otec12_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_379.3419065475464_values"
+    #model_value = "model_batch64_epoch100_resnet100_nresfltr6_nfltr12_of2_otec6_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_314.8617606163025_values"
+    #model_value = "model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w2_yr_11_13_8.384427070617676_values"
+
     model_value_dir = os.path.join("./model_results/", model_value)
     pred_tec_dir = os.path.join(model_value_dir, "predicted_tec/")
     filled_tec_dir = "../data/tec_map/filled/"
@@ -131,7 +134,7 @@ def main():
 
     base_model = "previous_day"
     mask_tec = True
-    mask_matrix = np.load("../WeightMatrix/mask-2011-2013-80perc.npy")
+    mask_matrix = np.load("../WeightMatrix/w2_mask-2011-2013-80perc.npy")
     mask_matrix = np.logical_not(mask_matrix).astype(int)
 
 #    model = "STResNet"
@@ -151,7 +154,7 @@ def main():
 
     for err_type in err_types:
         if err_type in ["Average Absolute Error"]:
-            vmin=0; vmax=10; cbar_label="TEC Unit"
+            vmin=0; vmax=5; cbar_label="TEC Unit"
         if err_type in ["Relative Average Absolute Error"]:
             vmin=0; vmax=0.5; cbar_label="Percentage"
         if err_type in ["Average Absolute Error Std"]:
@@ -159,7 +162,7 @@ def main():
         if err_type in ["True Average", "Predicted Average"]:
             vmin=0; vmax=20; cbar_label="TEC Unit"
         if err_type in ["Relative Error Ratio"]:
-            vmin=1; vmax=4; cbar_label="Ratio"
+            vmin=1; vmax=2; cbar_label="Ratio"
 
 	# Create empy axes
 	fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(12,10),
@@ -214,8 +217,9 @@ def main():
 	cbar_ax = fig.add_axes([0.93, 0.25, 0.02, 0.5])
 	add_cbar(fig, coll, bounds=None, cax=cbar_ax, label=cbar_label)
 
-	#fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_2/"
-	fig_dir = os.path.join("./plots/", model_value)
+	#fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_otec24_exoT_w2/"
+	fig_dir = "/home/muhammad/Dropbox/ARC/" + "model_otec12_exoT_w0/"
+	#fig_dir = os.path.join("./plots/", model_value)
         if not os.path.exists(fig_dir):
             os.makedirs(fig_dir)
 	fig_name = model + "_" + "_".join(err_type.split())
