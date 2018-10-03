@@ -464,8 +464,9 @@ class ModValTSLat(object):
         mBinTrueDF["rel_mean_tec_err"] = \
                 mBinTrueDF["abs_mean_tec_err"]/mBinTrueDF["mean_true_tec"]        
         # set seaborn styling
-        sns.set_style("whitegrid")
+        # sns.set_style("whitegrid")
         # sns.set_context("poster")
+        plt.style.use("fivethirtyeight")
         f = plt.figure(figsize=(12, 8))
         ax = f.add_subplot(1,1,1)
         if errLatRange is not None:
@@ -487,7 +488,7 @@ class ModValTSLat(object):
             ax.set_ylabel(" Relative Err.", fontsize=14)
             ax.set_xlabel("MLAT", fontsize=14)
             ax.tick_params(labelsize=14)
-            ax.set_ylim([0, 2.])
+            ax.set_ylim([-0.1, 1.])
             f.savefig(figName,bbox_inches='tight')
 
     

@@ -269,7 +269,7 @@ class DatePlots(object):
         nCols = 3
         nRows = len( tecDictKeys )
         # Now set the plot style
-        sns.set_style("whitegrid")
+        # sns.set_style("whitegrid")
         plt.style.use("fivethirtyeight")
         fig, ax = plt.subplots(nRows, nCols, sharex='col', sharey='row',figsize=(8,11))
         # plot the data
