@@ -7,7 +7,8 @@ import sys
 sys.path.append("../STResNet")
 from params import Params as param
 
-param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr6_nfltr12_of2_otec6_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_314.8617606163025"
+#param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr6_nfltr12_of2_otec6_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w0_yr_11_13_314.8617606163025"
+param.saved_model_path = "./model_results/model_batch64_epoch100_resnet100_nresfltr24_nfltr12_of2_otec24_cf2_csl72_pf12_psl72_tf36_tsl8_gs32_ks55_exoT_nrmT_w2_yr_11_13_8.384427070617676"
 
 model_path = param.saved_model_path + "_values"
 

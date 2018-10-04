@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use("Agg")
+from matplotlib.ticker import MultipleLocator
 import datetime as dt
 import pandas as pd
 import seaborn as sns
@@ -11,14 +12,8 @@ import sys
 sys.path.append("./")
 from pred_err_by_hour import get_tec, calc_avg_err
 
-@dask.delayed
-def load_tec(file_path):
-    x = np.load(file_path)
-    return x
-
 def add_cbar(fig, coll, bounds=None, label="TEC Unit", cax=None):
 
-    from matplotlib.ticker import MultipleLocator
     # add color bar
     if cax:
         cbar=fig.colorbar(coll, cax=cax, orientation="vertical",
@@ -104,12 +99,16 @@ def relative_err_plot(pred_tec_dir, stime, etime,
 	    if err_type in ["Relative Error Ratio"]:
 		coll_ratio = coll
 
-	    #x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
-	    #x = list(range(325, 360, 20)) + list(range(5, 35, 20)) 
-	    x = list(range(-35, 0, 20)) + list(range(5, 35, 20)) 
-	    y = list(range(15, 90, 20))
-	    ax.set_xticklabels(tuple(x), fontsize=10)
-	    ax.set_yticklabels(y, fontsize=10)
+            ax.xaxis.set_major_locator(MultipleLocator(15))
+            ax.yaxis.set_major_locator(MultipleLocator(15))
+            #x = list(range(225, 360, 25)) + list(range(0, 35, 15)) 
+            #x = list(range(325, 360, 20)) + list(range(5, 35, 20)) 
+            x = list(range(-35, 0, 15)) + list(range(10, 35, 15))
+            y = list(range(15, 95, 15))
+            ax.set_xticks(range(5, 80, 15))
+            ax.set_xticklabels(x, fontsize=10)
+            ax.set_yticks(range(5, 80, 15))
+            ax.set_yticklabels(y, fontsize=10)
 	    if j == 0:
 		ax.set_title("UT Hour = " + str(time_window), fontsize=10)
 
