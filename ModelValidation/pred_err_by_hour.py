@@ -61,22 +61,33 @@ def get_tec(stime, etime, pred_tec_dir, time_window=[0, 1],
 
     return true_tec, pred_tec, base_tec
 
-def calc_avg_err(true_tec, pred_tec):
+def calc_avg_err(true_tec, pred_tec, method="median"):
     """ Calculates the average predicted TEC error
     """
 
     err_dict = {}
     pred_true_diff =  np.abs(pred_tec - true_tec)
-    abs_avg_err = pred_true_diff.mean(axis=0)
     err_dict["pred_true_diff"] = pred_true_diff
-    err_dict["True Average"] = true_tec.mean(axis=0)
-    err_dict["Predicted Average"] = pred_tec.mean(axis=0)
+    if method == "mean":
+        abs_avg_err = pred_true_diff.mean(axis=0)
+        err_dict["True Average"] = true_tec.mean(axis=0)
+        err_dict["Predicted Average"] = pred_tec.mean(axis=0)
+        err_dict["Relative Average Absolute Error"] = (np.divide(pred_true_diff,
+                                                                np.abs(true_tec))).mean(axis=0)
+    if method == "median":
+        abs_avg_err = np.median(pred_true_diff,axis=0)
+        err_dict["True Average"] = np.median(true_tec, axis=0)
+        err_dict["Predicted Average"] = np.median(pred_tec, axis=0)
+        err_dict["Relative Average Absolute Error"] = np.median(np.divide(pred_true_diff,
+                                                                 np.abs(true_tec)), axis=0)
     err_dict["Average Absolute Error"] = abs_avg_err
     err_dict["Average Absolute Error Std"] = pred_true_diff.std(axis=0)
     err_dict["abs_avg_err_max"] = pred_true_diff.max(axis=0)
     err_dict["abs_avg_err_min"] = pred_true_diff.min(axis=0)
-    err_dict["Relative Average Absolute Error"] = np.divide(abs_avg_err,
-                                                            true_tec.mean(axis=0))
+
+#    err_dict["Relative Average Absolute Error"] = np.divide(abs_avg_err,
+#                                                            true_tec.mean(axis=0))
+
 
     return err_dict
 
