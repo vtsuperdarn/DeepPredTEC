@@ -491,8 +491,11 @@ class ModPerfTS(object):
             plotFreqMed = numpy.percentile(errFreq, 70)/float(len(errArr))
             # plot the hist
             weights = numpy.ones_like(errArr)/float(len(errArr))
-            ax.hist(errArr, bins=bins, color="#fc4f30",\
-                     weights=weights, histtype="bar", lw=2.5, alpha=0.3)
+            # ax.hist(errArr, bins=bins, color="#fc4f30",\
+            #          weights=weights, histtype="bar", lw=2.5, alpha=0.3)
+            hist, binEdges = numpy.histogram( errArr, bins=bins,\
+             weights=weights )
+            ax.plot( binEdges[1:], hist, color="#fc4f30" )
             # Plot the percentile ranges
             # lower percentile
             ax.plot( [quar1, quar1], plotFreqArr, color="#008fd5" )
