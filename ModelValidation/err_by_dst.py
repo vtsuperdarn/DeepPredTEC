@@ -78,17 +78,18 @@ def err_by_dst(pred_tec_dir, stime, etime,
                filled_tec_dir="../data/tec_map/filled/",
                dst_filepath = "./dst-2015.csv"):
 
-    """ Plots three colums (relative errors for STResNet, baseline, and the ration of the two)
-    for selected local times.
+    """ Plots the average relative error grouped by Dst index.
     """
 
     # Dst bins
     #dst_bins=[[-500, -100], [-100, -50], [-50, -25], [-25, 15]]
-    dst_bins=[[-500, -100], [-100, -50], [-50, -20], [-20, 20]]
+    dst_bins=[[-20, 20], [-50, -20], [-100, -50] , [-500, -100]]
+    #dst_bins=[[-500, 100], [-500, 100], [-500, 100], [-500, 100]]
     dst_title = [r"Dst $<$ " + str(dst_bins[0][1]),
                  str(dst_bins[1][0]) + r"$\leq$ Dst $<$" + str(dst_bins[1][1]), 
                  str(dst_bins[2][0]) + r"$\leq$ Dst $<$" + str(dst_bins[2][1]), 
                  str(dst_bins[3][0]) + r"$\leq$ Dst $<$" + str(dst_bins[3][1])]
+    dst_title.reverse()
 
     # Read Dst data
     df_dst = read_dst(dst_filepath, stime, etime)
@@ -137,6 +138,83 @@ def err_by_dst(pred_tec_dir, stime, etime,
 
     return fig
 
+def err_by_dst_hist(pred_tec_dir, stime, etime,
+                   mask_tec=True, weight_matrix=None, 
+                   pred_time_step=10,
+                   model_type = "STResNet",
+                   filled_tec_dir="../data/tec_map/filled/",
+                   dst_filepath = "./dst-2015.csv"):
+
+    """ Plots the histograms of relative errors grouped by Dst index.
+    """
+
+    # Dst bins
+    #dst_bins=[[-500, -100], [-100, -50], [-50, -25], [-25, 15]]
+    dst_bins=[[-20, 20], [-50, -20], [-100, -50] , [-500, -100]]
+    dst_bins.reverse()
+    #dst_bins=[[-500, 100], [-500, 100], [-500, 100], [-500, 100]]
+    dst_title = [r"Dst $<$ " + str(dst_bins[0][1]),
+                 str(dst_bins[1][0]) + r"$\leq$ Dst $<$" + str(dst_bins[1][1]), 
+                 str(dst_bins[2][0]) + r"$\leq$ Dst $<$" + str(dst_bins[2][1]), 
+                 str(dst_bins[3][0]) + r"$\leq$ Dst $<$" + str(dst_bins[3][1])]
+    dst_title.reverse()
+
+    # Read Dst data
+    df_dst = read_dst(dst_filepath, stime, etime)
+
+    # Create empy axes
+    vmin=0; vmax=0.5; cmap="jet"
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(8,8),
+                             sharex=True, sharey=True)
+    #fig.subplots_adjust(hspace=0.3, wspace=0.3)
+
+    # Loop through the Dst bins
+    for i, dst_bin in enumerate(dst_bins):
+        ax = axes[i//2, i%2]
+        true_tec, pred_tec, base_tec = get_tec(pred_tec_dir, df_dst,
+                                               dst_bin=dst_bin, pred_time_step=pred_time_step,
+                                               base_model="previous_day",
+                                               filled_tec_dir=filled_tec_dir)
+        
+        if model_type == "STResNet":
+            var = pred_tec
+        if model_type == "Baseline":
+            var = base_tec
+        pred_true_diff =  np.abs(var - true_tec)
+        rel_err = np.abs(np.divide(pred_true_diff, true_tec))
+
+        if mask_tec:
+            weight_tmp = np.tile(weight_matrix, (rel_err.shape[0], 1, 1))
+
+            # remove zero entries (missing entries)
+            rel_err_weighted = rel_err[np.where(weight_tmp)]
+
+            # Remove very large values
+            rel_err_weighted = rel_err_weighted[np.where(rel_err_weighted < 100)]
+
+            # Remove very small values
+            rel_err_weighted = rel_err_weighted[np.where(rel_err_weighted > 1e-8)]
+
+
+        hist_bins = np.linspace(0,1,100)
+        bin_width = hist_bins[1] - hist_bins[0]
+        hist, bin_edges = np.histogram(rel_err_weighted, bins=hist_bins)
+        # Normalize the hist
+        hist = 1.* hist / rel_err_weighted.size
+        print("hist sum = " + str(hist.sum()))
+
+        ax.plot(hist_bins[:-1] + bin_width/2., hist)
+        ax.set_title(dst_title[i], fontsize=10)
+        ax.set_ylim([0, 0.05])
+
+        if i%2 == 0:
+            ax.set_ylabel("Probability")
+        if i//2 == 1:
+            ax.set_xlabel("Relative Error")
+
+    return fig
+
+
 def main():
 
     # Select a model and set the path for predicted TEC map
@@ -150,8 +228,8 @@ def main():
 
 
     # Error types to be plotted
-    model_type = "STResNet"
-    #model_type = "Baseline"
+    #model_type = "STResNet"
+    model_type = "Baseline"
 
     tec_resolution = 5
     # Extract hyperparameter values from model_value folder name
@@ -164,10 +242,18 @@ def main():
     etime = dt.datetime(2015, 4, 1)
 
     mask_tec = True
-    mask_matrix = np.load("../WeightMatrix/w2_mask-2011-2013-80perc.npy")
-    mask_matrix = np.logical_not(mask_matrix).astype(int)
+    weight_matrix = np.load("../WeightMatrix/w2_mask-2011-2013-80perc.npy")
+    mask_matrix = np.logical_not(weight_matrix).astype(int)
 
     # Plot relative errors for STResnet and Baseline, and their ratio 
+
+    fig_hist = err_by_dst_hist(pred_tec_dir, stime, etime,
+                                 mask_tec=mask_tec, weight_matrix=weight_matrix, 
+                                 pred_time_step=pred_time_step,
+                                 model_type=model_type,
+                                 filled_tec_dir=filled_tec_dir,
+                                 dst_filepath=dst_filepath)
+
     fig = err_by_dst(pred_tec_dir, stime, etime,
                      mask_tec=mask_tec, mask_matrix=mask_matrix, 
                      pred_time_step=pred_time_step,
@@ -182,13 +268,19 @@ def main():
     if not os.path.exists(fig_dir):
 	os.makedirs(fig_dir)
     fig_name = model_type + "_error_by_dst"
+    fig_hist_name = fig_name + "_hist"
     if mask_tec:
 	fig_name = fig_name + "_masked"
+	fig_hist_name  = fig_hist_name + "_masked"
 
     fig.savefig(os.path.join(fig_dir,fig_name) + ".png", dpi=200, bbox_inches='tight')
     fig.savefig(os.path.join(fig_dir,fig_name) + ".pdf", format="pdf", bbox_inches='tight')
 
+    fig_hist.savefig(os.path.join(fig_dir,fig_hist_name) + ".png", dpi=200, bbox_inches='tight')
+    fig_hist.savefig(os.path.join(fig_dir,fig_hist_name) + ".pdf", format="pdf", bbox_inches='tight')
+
     plt.close(fig)
+    plt.close(fig_hist)
 
     return
 
