@@ -111,5 +111,3 @@ if __name__ == "__main__":
                            mlon_east=mlon_east,
                            inpDir=inpDir, outDir=outDir)
     print(("--- %s seconds ---" % (time.time() - start_time)))
-
-
